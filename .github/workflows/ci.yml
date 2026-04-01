@@ -1,0 +1,30 @@
+name: Lucky Attachment CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: "*"
+
+jobs:
+  specs:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        crystal_version: [latest]
+    runs-on: ${{ matrix.os }}
+    continue-on-error: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: crystal-lang/install-crystal@v1
+        with:
+          crystal: ${{ matrix.crystal_version }}
+      - name: Install shards
+        run: shards install
+      - name: Run tests
+        run: crystal spec
+      - name: Check format
+        run: crystal tool format --check
+      - name: Lint
+        run: ./bin/ameba
