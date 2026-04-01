@@ -19,7 +19,8 @@ storage for testing.
 require "lucky_attachment"
 
 # Define an uploader
-struct ImageUploader < Lucky::Attachment::Uploader
+struct ImageUploader
+  include Lucky::Attachment::Uploader
 end
 
 # Upload a file
@@ -83,10 +84,11 @@ end
 
 ## Uploaders
 
-Create an uploader by inheriting from `Lucky::Attachment::Uploader`:
+Create an uploader by including `Lucky::Attachment::Uploader`:
 
 ```crystal
-struct ImageUploader < Lucky::Attachment::Uploader
+struct ImageUploader
+  include Lucky::Attachment::Uploader
 end
 ```
 
@@ -114,7 +116,8 @@ stored = ImageUploader.store(uploaded_file)
 Override `generate_location` to control where files are stored:
 
 ```crystal
-struct ImageUploader < Lucky::Attachment::Uploader
+struct ImageUploader
+  include Lucky::Attachment::Uploader
   def generate_location(uploaded_file, metadata, **options) : String
     date = Time.utc.to_s("%Y/%m/%d")
     File.join("images", date, super)
@@ -128,7 +131,8 @@ By default, uploaders use `"cache"` and `"store"` as storage keys. Override
 `self.storages` to use different ones:
 
 ```crystal
-struct ImageUploader < Lucky::Attachment::Uploader
+struct ImageUploader
+  include Lucky::Attachment::Uploader
   def self.storages : NamedTuple(cache: String, store: String)
     {cache: "tmp", store: "offsite"}
   end
@@ -243,7 +247,8 @@ These can be registered on your uploader with the `extract` macro:
 | `DimensionsFromMagick` | `width`, `height` | `magick` or `identify` CLI tool |
 
 ```crystal
-struct ImageUploader < Lucky::Attachment::Uploader
+struct ImageUploader
+  include Lucky::Attachment::Uploader
   # Replace the default MIME extractor with one that uses the file utility
   extract mime_type, using: Lucky::Attachment::Extractor::MimeFromFile
 
@@ -255,7 +260,8 @@ end
 Shorter aliases are available inside uploader definitions:
 
 ```crystal
-struct ImageUploader < Lucky::Attachment::Uploader
+struct ImageUploader
+  include Lucky::Attachment::Uploader
   extract mime_type, using: MimeFromFileExtractor
   extract dimensions, using: DimensionsFromMagickExtractor
 end
@@ -279,7 +285,8 @@ end
 Then register it:
 
 ```crystal
-struct PdfUploader < Lucky::Attachment::Uploader
+struct PdfUploader
+  include Lucky::Attachment::Uploader
   extract pages, using: PageCountExtractor
 end
 
