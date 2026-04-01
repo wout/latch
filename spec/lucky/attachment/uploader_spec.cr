@@ -228,9 +228,19 @@ describe Lucky::Attachment::Uploader do
       TestUploader.storages[:store].should eq("store")
     end
 
-    it "returns overridden keys in a subclass" do
+    it "returns overridden keys when both are specified" do
       CustomStoragesUploader.storages[:cache].should eq("tmp")
       CustomStoragesUploader.storages[:store].should eq("offsite")
+    end
+
+    it "keeps the default cache key when only store is overridden" do
+      StoreOnlyUploader.storages[:cache].should eq("cache")
+      StoreOnlyUploader.storages[:store].should eq("offsite")
+    end
+
+    it "keeps the default store key when only cache is overridden" do
+      CacheOnlyUploader.storages[:cache].should eq("tmp")
+      CacheOnlyUploader.storages[:store].should eq("store")
     end
   end
 
@@ -401,9 +411,19 @@ end
 private struct CustomStoragesUploader
   include Lucky::Attachment::Uploader
 
-  def self.storages : NamedTuple(cache: String, store: String)
-    {cache: "tmp", store: "offsite"}
-  end
+  storages cache: "tmp", store: "offsite"
+end
+
+private struct StoreOnlyUploader
+  include Lucky::Attachment::Uploader
+
+  storages store: "offsite"
+end
+
+private struct CacheOnlyUploader
+  include Lucky::Attachment::Uploader
+
+  storages cache: "tmp"
 end
 
 private struct CustomLocationUploader

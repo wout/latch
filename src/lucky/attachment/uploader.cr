@@ -47,10 +47,16 @@ module Lucky::Attachment::Uploader
       Lucky::Attachment.settings.path_prefix
     end
 
-    # Defines the storages used by this uploader. Overwrite this method in
-    # uploader subclasses to use different storages per uploader.
-    def self.storages : NamedTuple(cache: String, store: String)
-      {cache: "cache", store: "store"}
+    # Default storage keys (overridable via the `storages` macro)
+    @@_cache_storage_key = "cache"
+    @@_store_storage_key = "store"
+
+    # Defines `self.storages` after all user code has been processed, so
+    # the `storages` macro can be called without being shadowed by the method.
+    macro finished
+      def self.storages : NamedTuple(cache: String, store: String)
+        {cache: @@_cache_storage_key, store: @@_store_storage_key}
+      end
     end
 
     # Register default extractors
@@ -135,6 +141,30 @@ module Lucky::Attachment::Uploader
       stored_file.delete if delete_source
       promoted
     end
+  end
+
+  # Configures the storage keys used by this uploader. Both `cache` and `store`
+  # have defaults, so you only need to specify the ones you want to change.
+  #
+  # ```
+  # struct ImageUploader
+  #   include Lucky::Attachment::Uploader
+  #
+  #   # Override both
+  #   storages cache: "tmp", store: "offsite"
+  # end
+  #
+  # struct VideoUploader
+  #   include Lucky::Attachment::Uploader
+  #
+  #   # Override only store; cache stays "cache"
+  #   storages store: "offsite"
+  # end
+  # ```
+  #
+  macro storages(cache = "cache", store = "store")
+    @@_cache_storage_key = {{ cache }}
+    @@_store_storage_key = {{ store }}
   end
 
   # Registers an extractor for a given key.
