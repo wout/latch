@@ -1,0 +1,28 @@
+name: lucky_attachment
+version: 0.1.0
+
+authors:
+  - Wout <hi@wout.codes>
+
+crystal: ">= 1.16.0"
+
+license: MIT
+
+dependencies:
+  lucky:
+    github: luckyframework/lucky
+    version: ~> 1.4.0
+  habitat:
+    github: luckyframework/habitat
+    version: ~> 0.4.9
+
+development_dependencies:
+  ameba:
+    github: crystal-ameba/ameba
+    version: ~> 1.6.4
+  awscr-s3:
+    github: taylorfinnell/awscr-s3
+    version: ~> 0.10.0
+  webmock:
+    github: manastech/webmock.cr
+    branch: master
