@@ -127,15 +127,27 @@ end
 
 ### Custom storage keys
 
-By default, uploaders use `"cache"` and `"store"` as storage keys. Override
-`self.storages` to use different ones:
+By default, uploaders use `"cache"` and `"store"` as storage keys. Use the
+`storages` macro to change them:
 
 ```crystal
 struct ImageUploader
   include Lucky::Attachment::Uploader
-  def self.storages : NamedTuple(cache: String, store: String)
-    {cache: "tmp", store: "offsite"}
-  end
+
+  # Override both
+  storages cache: "tmp", store: "offsite"
+end
+```
+
+You only need to specify the keys you want to change, the others keep their
+defaults:
+
+```crystal
+struct ImageUploader
+  include Lucky::Attachment::Uploader
+
+  # Only change the store key, cache stays "cache"
+  storages store: "offsite"
 end
 ```
 
@@ -230,20 +242,20 @@ end
 
 Every uploader registers three extractors by default:
 
-| Extractor | Key | Description |
-|---|---|---|
-| `FilenameFromIO` | `filename` | Original filename from the upload |
-| `MimeFromIO` | `mime_type` | MIME type from the Content-Type header |
-| `SizeFromIO` | `size` | File size in bytes |
+| Extractor        | Key         | Description                            |
+| ---------------- | ----------- | -------------------------------------- |
+| `FilenameFromIO` | `filename`  | Original filename from the upload      |
+| `MimeFromIO`     | `mime_type` | MIME type from the Content-Type header |
+| `SizeFromIO`     | `size`      | File size in bytes                     |
 
 ### Additional extractors
 
 These can be registered on your uploader with the `extract` macro:
 
-| Extractor | Key(s) | Requires |
-|---|---|---|
-| `MimeFromExtension` | `mime_type` | - |
-| `MimeFromFile` | `mime_type` | `file` CLI tool |
+| Extractor              | Key(s)            | Requires                        |
+| ---------------------- | ----------------- | ------------------------------- |
+| `MimeFromExtension`    | `mime_type`       | -                               |
+| `MimeFromFile`         | `mime_type`       | `file` CLI tool                 |
 | `DimensionsFromMagick` | `width`, `height` | `magick` or `identify` CLI tool |
 
 ```crystal
