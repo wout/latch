@@ -382,7 +382,9 @@ private class TestAwss3Client < Awscr::S3::Client
   end
 end
 
-private struct TestUploader < Lucky::Attachment::Uploader; end
+private struct TestUploader
+  include Lucky::Attachment::Uploader
+end
 
 private def bucket
   "lucky-bucket"

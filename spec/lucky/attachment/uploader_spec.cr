@@ -394,16 +394,21 @@ describe Lucky::Attachment::Uploader do
   end
 end
 
-private struct TestUploader < Lucky::Attachment::Uploader
+private struct TestUploader
+  include Lucky::Attachment::Uploader
 end
 
-private struct CustomStoragesUploader < Lucky::Attachment::Uploader
+private struct CustomStoragesUploader
+  include Lucky::Attachment::Uploader
+
   def self.storages : NamedTuple(cache: String, store: String)
     {cache: "tmp", store: "offsite"}
   end
 end
 
-private struct CustomLocationUploader < Lucky::Attachment::Uploader
+private struct CustomLocationUploader
+  include Lucky::Attachment::Uploader
+
   def generate_location(
     uploaded_file : Lucky::UploadedFile,
     metadata : Lucky::Attachment::MetadataHash,
@@ -413,7 +418,9 @@ private struct CustomLocationUploader < Lucky::Attachment::Uploader
   end
 end
 
-private struct CustomMetadataUploader < Lucky::Attachment::Uploader
+private struct CustomMetadataUploader
+  include Lucky::Attachment::Uploader
+
   def extract_metadata(
     uploaded_file : Lucky::UploadedFile,
     metadata : Lucky::Attachment::MetadataHash? = nil,
@@ -449,11 +456,15 @@ private struct StaticMimeExtractor
   end
 end
 
-private struct CustomExtractorUploader < Lucky::Attachment::Uploader
+private struct CustomExtractorUploader
+  include Lucky::Attachment::Uploader
+
   extract custom_key, using: StaticExtractor
 end
 
-private struct OverriddenExtractorUploader < Lucky::Attachment::Uploader
+private struct OverriddenExtractorUploader
+  include Lucky::Attachment::Uploader
+
   extract mime_type, using: StaticMimeExtractor
 end
 

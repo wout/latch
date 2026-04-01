@@ -248,4 +248,6 @@ describe Lucky::Attachment::StoredFile do
   end
 end
 
-private struct TestUploader < Lucky::Attachment::Uploader; end
+private struct TestUploader
+  include Lucky::Attachment::Uploader
+end

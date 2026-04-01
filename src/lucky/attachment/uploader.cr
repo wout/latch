@@ -1,10 +1,12 @@
 require "uuid"
 
-# Base uploader class that handles file uploads with metadata extraction and
-# location generation.
+# Uploader module that handles file uploads with metadata extraction and
+# location generation. Include this module in a struct or class.
 #
 # ```
-# struct ImageUploader < Lucky::Attachment::Uploader
+# struct ImageUploader
+#   include Lucky::Attachment::Uploader
+#
 #   def generate_location(uploaded_file, metadata, **options) : String
 #     date = Time.utc.to_s("%Y/%m/%d")
 #     File.join("images", date, super)
@@ -15,20 +17,8 @@ require "uuid"
 # # => Lucky::Attachment::StoredFile with id "images/2024/01/15/abc123.jpg"
 # ```
 #
-abstract struct Lucky::Attachment::Uploader
+module Lucky::Attachment::Uploader
   alias MetadataHash = ::Lucky::Attachment::MetadataHash
-
-  # Defines the path prefix for uploads in the storage. Overwrite this method
-  # in uploader subclasses to use custom path prefixes per uploader.
-  def self.path_prefix : String
-    Lucky::Attachment.settings.path_prefix
-  end
-
-  # Defines the storages used by this uploader. Overwrite this method in
-  # uploader subclasses to use different storages per uploader.
-  def self.storages : NamedTuple(cache: String, store: String)
-    {cache: "cache", store: "store"}
-  end
 
   # Adds shorter local aliases for built-in extractors.
   # e.g. `Lucky::Attachment::Extractor::SizeFromIO` -> `SizeFromIOExtractor`
@@ -43,12 +33,24 @@ abstract struct Lucky::Attachment::Uploader
     alias {{ extractor.id }}Extractor = Lucky::Attachment::Extractor::{{ extractor.id }}
   {% end %}
 
-  macro inherited
+  macro included
     {% stored_file = "#{@type}::StoredFile".id %}
 
     @@extractors = {} of String => Lucky::Attachment::Extractor
 
     class {{ stored_file }} < Lucky::Attachment::StoredFile
+    end
+
+    # Defines the path prefix for uploads in the storage. Overwrite this method
+    # in uploader subclasses to use custom path prefixes per uploader.
+    def self.path_prefix : String
+      Lucky::Attachment.settings.path_prefix
+    end
+
+    # Defines the storages used by this uploader. Overwrite this method in
+    # uploader subclasses to use different storages per uploader.
+    def self.storages : NamedTuple(cache: String, store: String)
+      {cache: "cache", store: "store"}
     end
 
     # Register default extractors
@@ -138,7 +140,9 @@ abstract struct Lucky::Attachment::Uploader
   # Registers an extractor for a given key.
   #
   # ```
-  # struct PdfUploader < Lucky::Attachment::Uploader
+  # struct PdfUploader
+  #   include Lucky::Attachment::Uploader
+  #
   #   # Use a different MIME type extractor than the default one
   #   extract mime_type, using: Lucky::Attachment::Extractor::MimeFromExtension
   #
@@ -219,7 +223,9 @@ abstract struct Lucky::Attachment::Uploader
   # subclasses for custom locations.
   #
   # ```
-  # class ImageUploader < Lucky::Attachment::Uploader
+  # struct ImageUploader
+  #   include Lucky::Attachment::Uploader
+  #
   #   def generate_location(uploaded_file, metadata, **options) : String
   #     File.join("images", super)
   #   end
@@ -241,7 +247,9 @@ abstract struct Lucky::Attachment::Uploader
   # subclasses for custom filenames in the storage.
   #
   # ```
-  # class ImageUploader < Lucky::Attachment::Uploader
+  # struct ImageUploader
+  #   include Lucky::Attachment::Uploader
+  #
   #   def generate_uid(uploaded_file, metadata, **options) : String
   #     "#{metadata["filename"]}-#{Time.local.to_unix}"
   #   end
@@ -256,11 +264,13 @@ abstract struct Lucky::Attachment::Uploader
     UUID.random.to_s
   end
 
-  # Extracts metadata from the IO. Override in subclasses to add completely
-  # custom metadata extraction outside of the `extract` DSL.
+  # Extracts metadata from the IO. Override to add completely custom metadata
+  # extraction outside of the `extract` DSL.
   #
   # ```
-  # class ImageUploader < Lucky::Attachment::Uploader
+  # struct ImageUploader
+  #   include Lucky::Attachment::Uploader
+  #
   #   def extract_metadata(
   #     uploaded_file : Lucky::UploadedFile,
   #     metadata : MetadataHash? = nil,
