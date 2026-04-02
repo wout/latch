@@ -1,10 +1,10 @@
-# Some extractors may need to call on command-line tools to extract certain
-# data. This module will provide a helper to simplify running commands.
+# Helper module for running command-line tools on file IO. Include this in
+# extractors or processors that need to shell out to CLI tools.
 #
 # ```
 # struct ColourspaceFromIdentify
 #   include Lucky::Attachment::Extractor
-#   include Lucky::Attachment::Extractor::RunCommand
+#   include Lucky::Attachment::RunCommand
 #
 #   def extract(uploaded_file, metadata, **options) : String?
 #     run_command(
@@ -16,7 +16,7 @@
 # end
 # ```
 #
-module Lucky::Attachment::Extractor::RunCommand
+module Lucky::Attachment::RunCommand
   # Runs the given command on the given IO object and returns the resulting
   # string if the command was successful.
   private def run_command(

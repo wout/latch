@@ -1,9 +1,7 @@
-require "./run_command"
-
 @[Lucky::Attachment::MetadataMethods(width : Int32, height : Int32)]
 struct Lucky::Attachment::Extractor::DimensionsFromMagick
   include Lucky::Attachment::Extractor
-  include Lucky::Attachment::Extractor::RunCommand
+  include Lucky::Attachment::RunCommand
 
   ARGS = ["identify", "-format", "%[fx:w] %[fx:h]"]
 

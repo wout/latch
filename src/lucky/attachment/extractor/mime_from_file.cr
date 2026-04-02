@@ -1,8 +1,6 @@
-require "./run_command"
-
 struct Lucky::Attachment::Extractor::MimeFromFile
   include Lucky::Attachment::Extractor
-  include Lucky::Attachment::Extractor::RunCommand
+  include Lucky::Attachment::RunCommand
 
   # Extracts the MIME type using the `file` utility.
   def extract(uploaded_file, metadata, **options) : String?
