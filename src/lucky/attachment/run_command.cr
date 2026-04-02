@@ -1,5 +1,5 @@
-# Helper module for running command-line tools on file IO. Include this in
-# extractors or processors that need to shell out to CLI tools.
+# Helper module for running command-line tools. Include this in extractors
+# or processors that need to shell out to CLI tools.
 #
 # ```
 # struct ColourspaceFromIdentify
@@ -7,49 +7,70 @@
 #   include Lucky::Attachment::RunCommand
 #
 #   def extract(uploaded_file, metadata, **options) : String?
-#     run_command(
-#       "magick",
-#       ["identify", "-format", "%[colorspace]"],
-#       uploaded_file
-#     )
+#     run_command("magick", ["identify", "-format", "%[colorspace]"], uploaded_file)
 #   end
 # end
 # ```
 #
 module Lucky::Attachment::RunCommand
-  # Runs the given command on the given IO object and returns the resulting
-  # string if the command was successful.
+  # Runs the given command with the given args. Returns the stripped stdout
+  # string if the command was successful, nil otherwise.
+  private def run_command(
+    command : String,
+    args : Array(String),
+  ) : String?
+    result, stdout, stderr = run_command_process(command, args)
+
+    return stdout.to_s.strip if result.success?
+
+    run_command_log_debug(command, args, stderr)
+  rescue File::NotFoundError
+    raise run_command_cli_error(command)
+  end
+
+  # Runs the given command, piping the IO to stdin. Appends `"-"` to args so
+  # the tool reads from stdin. Rewinds the input after execution.
   private def run_command(
     command : String,
     args : Array(String),
     input : IO,
   ) : String?
-    stdout, stderr = IO::Memory.new, IO::Memory.new
-    result = Process.run(
-      command,
-      args: args + ["-"],
-      output: stdout,
-      error: stderr,
-      input: input
-    )
+    result, stdout, stderr = run_command_process(command, args + ["-"], input: input)
     input.rewind
 
     return stdout.to_s.strip if result.success?
 
-    Log.debug do
-      "Unable to extract data with `#{command} #{args.join(' ')}` (#{stderr})"
-    end
+    run_command_log_debug(command, args, stderr)
   rescue File::NotFoundError
-    raise CliToolNotFound.new("The `#{command}` command-line tool is not installed")
+    raise run_command_cli_error(command)
   end
 
-  # Convenience method accepting the `Lucky::UploadedFile` wrapper instead of
-  # the `IO`.
+  # Convenience overload accepting an `UploadedFile` instead of a raw `IO`.
   private def run_command(
     command : String,
     args : Array(String),
     uploaded_file : Lucky::UploadedFile,
   ) : String?
     run_command(command, args, uploaded_file.tempfile)
+  end
+
+  private def run_command_process(
+    command : String,
+    args : Array(String),
+    **input,
+  ) : {Process::Status, IO, IO}
+    stdout, stderr = IO::Memory.new, IO::Memory.new
+    result = Process.run(command, **input, args: args, output: stdout, error: stderr)
+    {result, stdout, stderr}
+  end
+
+  private def run_command_log_debug(command, args, stderr) : Nil
+    Log.debug do
+      "Unable to run `#{command} #{args.join(' ')}` (#{stderr})"
+    end
+  end
+
+  private def run_command_cli_error(command)
+    CliToolNotFound.new("The `#{command}` command-line tool is not installed")
   end
 end
