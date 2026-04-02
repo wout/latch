@@ -7,6 +7,9 @@ module Lucky::Attachment
   annotation MetadataMethods
   end
 
+  annotation VariantOptions
+  end
+
   class Error < Exception; end
 
   class FileNotFound < Error; end
