@@ -12,16 +12,14 @@
 module Lucky::Attachment::Processor
   macro included
     {%
-      unless anno = @type.annotation(Lucky::Attachment::VariantOptions)
-        @type.ancestors.each do |ancestor|
-          anno = ancestor.annotation(Lucky::Attachment::VariantOptions) unless anno
-        end
+      anno = ([@type] + @type.ancestors)
+        .map(&.annotation(Lucky::Attachment::VariantOptions))
+        .first
+
+      unless anno
+        raise "#{@type} must include a processor with a @[Lucky::Attachment::VariantOptions(...)] annotation"
       end
     %}
-
-    {% unless anno %}
-      {% raise "#{@type} must include a processor with a @[Lucky::Attachment::VariantOptions(...)] annotation" %}
-    {% end %}
 
     VARIANTS = {} of String => NamedTuple({{ anno.named_args.double_splat }})
   end
