@@ -1,4 +1,4 @@
-name: Lucky Attachment CI
+name: Latch CI
 
 on:
   push:
