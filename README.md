@@ -5,10 +5,10 @@ processing, and a two-stage upload workflow. Supports local filesystem,
 S3-compatible services, and in-memory storage for testing.
 
 The name is short for **L**ucky **At**ta**ch**ment. This shard was originally
-created for for [Lucky Framework](https://github.com/luckyframework/lucky), but
-it can be used in any Crystal app.
+created for [Lucky Framework](https://github.com/luckyframework/lucky), but it
+can be used in any Crystal app.
 
-- **Pluggable storage.** Ship with FileSystem, S3, and Memory backends, or
+- **Pluggable storage.** Ships with FileSystem, S3, and Memory backends, or
   build your own.
 - **Metadata extraction.** Filename, MIME type, size, and image dimensions
   out of the box.
@@ -65,13 +65,11 @@ Configure storage backends through Habitat:
 # config/latch.cr
 
 Latch.configure do |settings|
-  settings.storages["cache"] = Latch::Storage::FileSystem.new(
-    directory: "uploads",
-    prefix: "cache"
-  )
-  settings.storages["store"] = Latch::Storage::FileSystem.new(
-    directory: "uploads"
-  )
+  # Configure storages
+  settings.storages["cache"] = Latch::Storage::FileSystem.new( directory: "uploads", prefix: "cache")
+  settings.storages["store"] = Latch::Storage::FileSystem.new( directory: "uploads")
+
+  # Configure the prefix for where files need to be stored
   settings.path_prefix = ":model/:id/:attachment"
 end
 ```
@@ -92,6 +90,8 @@ end
 Create an uploader by including `Latch::Uploader`:
 
 ```crystal
+# src/uploaders/image_uploader.cr
+
 struct ImageUploader
   include Latch::Uploader
 end
@@ -140,7 +140,6 @@ By default, uploaders use `"cache"` and `"store"` as storage keys. Use the
 struct ImageUploader
   include Latch::Uploader
 
-  # Override both
   storages cache: "tmp", store: "offsite"
 end
 ```
@@ -182,6 +181,9 @@ end
 Each variant option becomes a `-key value` pair passed to `magick convert`.
 Typos and missing required options are caught at compile time.
 
+> [!IMPORTANT]
+> This processor expects ImageMagick to be installed.
+
 ### Custom processors
 
 Create a module annotated with `@[Latch::VariantOptions(...)]` that includes
@@ -194,7 +196,7 @@ module MyQualityProcessor
   include Latch::Processor
 
   process do
-    transform(tempfile, variant_options) # returns IO
+    do_your_thing_with_the(tempfile, variant_options) # and return an IO
   end
 end
 
@@ -228,7 +230,9 @@ module MyQualityProcessor
       stored_file.download do |tempfile|
         VARIANTS.each do |variant_name, variant_options|
           location = stored_file.variant_location("\#{name}_\#{variant_name}")
-          io = transform(tempfile, variant_options)
+
+          io = do_your_thing_with_the(tempfile, variant_options) # and return an IO
+
           storage.upload(io, location)
         end
       end
@@ -256,6 +260,9 @@ Processing runs separately from uploading:
 ```crystal
 stored = AvatarUploader.store(uploaded_file)
 AvatarUploader.process(stored)
+
+# or call it directly on the stored file
+stored.process
 ```
 
 ### Accessing variants
