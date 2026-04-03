@@ -11,9 +11,9 @@ it can be used in any Crystal app.
 - **Pluggable storage.** Ship with FileSystem, S3, and Memory backends, or
   build your own.
 - **Metadata extraction.** Filename, MIME type, size, and image dimensions
-  out of the box, with a macro for custom extractors.
+  out of the box.
 - **Async file processing.** Create image variants or process videos, right
-  after a commit or in a background job.
+  after a commit or in a worker.
 - **Two-stage uploads.** Cache first, promote later for safer form handling.
 - **JSON-serializable.** StoredFile objects serialize to JSON for easy
   persistence in your database.
@@ -282,6 +282,85 @@ end
 
 stored.sizes_large.url    # => "/uploads/abc123/sizes_large.jpg"
 stored.quality_high.url   # => "/uploads/abc123/quality_high.jpg"
+```
+
+## Avram integration
+
+Latch integrates with [Avram](https://github.com/luckyframework/avram) models
+through the `Latch::Avram::Model` module. This is an optional module that
+requires Avram as a dependency.
+
+```crystal
+require "latch/avram/model"
+```
+
+### Model setup
+
+Include `Latch::Avram::Model` in your model and use the `attach` macro inside
+the `table` block. The type should be the uploader's `StoredFile` class:
+
+```crystal
+class User < BaseModel
+  include Latch::Avram::Model
+
+  table do
+    # Assumes a jsonb column "avatar" in the database
+    attach avatar : ImageUploader::StoredFile?
+  end
+end
+```
+
+In your migration:
+
+```crystal
+add avatar : JSON::Any?
+```
+
+### SaveOperation setup
+
+The `attach` macro on a SaveOperation registers a file attribute and lifecycle
+hooks for caching and promoting the upload:
+
+```crystal
+class User::SaveOperation < User::BaseOperation
+  permit_columns # ...
+  attach avatar
+end
+```
+
+By default the file attribute is named `<attachment>_file` (e.g. `avatar_file`).
+A custom name can be provided:
+
+```crystal
+attach avatar, field_name: "avatar_upload"
+```
+
+For nilable attachments, a `delete_<attachment>` attribute is automatically
+added:
+
+```crystal
+User::SaveOperation.update!(user, delete_avatar: true)
+```
+
+### Upload flow
+
+Uploading happens automatically through the SaveOperation lifecycle:
+
+1. **Before save** the file is uploaded to cache storage
+2. **After commit** the cached file is promoted to permanent storage
+3. **On update** the old file is deleted before the new one is promoted
+4. **On delete** the attached file is removed from storage
+
+```crystal
+# Create with attachment
+user = User::SaveOperation.create!(avatar_file: uploaded_file)
+user.avatar.url # => "/uploads/user/1/avatar/abc123.jpg"
+
+# Update replaces the old file
+User::SaveOperation.update!(user, avatar_file: new_file)
+
+# Delete removes the file from storage
+User::DeleteOperation.delete!(user)
 ```
 
 ## Storage backends
