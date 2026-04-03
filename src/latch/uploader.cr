@@ -40,6 +40,9 @@ module Latch::Uploader
     @@processor_procs = [] of Proc({{ stored_file }}, Latch::Storage, Nil)
 
     class {{ stored_file }} < Latch::StoredFile
+      def process(**options) : self
+        {{ @type }}.process(self, **options)
+      end
     end
 
     # Defines the path prefix for uploads in the storage. Overwrite this method
