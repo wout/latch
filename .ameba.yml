@@ -9,7 +9,7 @@ Lint/UselessAssign:
   Description: Disallows useless variable assignments
   ExcludeTypeDeclarations: false
   Excluded:
-  - src/lucky/attachment/config.cr
-  - src/lucky/attachment/extractor/dimensions_from_magick.cr
+  - src/latch/config.cr
+  - src/latch/extractor/dimensions_from_magick.cr
   Enabled: true
   Severity: Warning

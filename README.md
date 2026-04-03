@@ -1,14 +1,19 @@
-# Lucky Attachment
+# Latch
 
-File uploads for [Lucky](https://github.com/luckyframework/lucky) with
-pluggable storage backends, metadata extraction, and a two-stage upload
-workflow. Supports local filesystem, S3-compatible services, and in-memory
-storage for testing.
+File uploads with pluggable storage backends, metadata extraction, variant
+processing, and a two-stage upload workflow. Supports local filesystem,
+S3-compatible services, and in-memory storage for testing.
+
+The name is short for **L**ucky **At**ta**ch**ment. This shard was originally
+created for for [Lucky Framework](https://github.com/luckyframework/lucky), but
+it can be used in any Crystal app.
 
 - **Pluggable storage.** Ship with FileSystem, S3, and Memory backends, or
   build your own.
 - **Metadata extraction.** Filename, MIME type, size, and image dimensions
   out of the box, with a macro for custom extractors.
+- **Async file processing.** Create image variants or process videos, right
+  after a commit or in a background job.
 - **Two-stage uploads.** Cache first, promote later for safer form handling.
 - **JSON-serializable.** StoredFile objects serialize to JSON for easy
   persistence in your database.
@@ -16,11 +21,11 @@ storage for testing.
 ## Quick start
 
 ```crystal
-require "lucky_attachment"
+require "latch"
 
 # Define an uploader
 struct ImageUploader
-  include Lucky::Attachment::Uploader
+  include Latch::Uploader
 end
 
 # Upload a file
@@ -37,8 +42,8 @@ stored_file.size       # => 102400
 
    ```yaml
    dependencies:
-     lucky_attachment:
-       github: wout/lucky_attachment
+     latch:
+       github: wout/latch
    ```
 
 2. Run `shards install`
@@ -49,7 +54,7 @@ stored_file.size       # => 102400
    # src/shards.cr
 
    # ...
-   require "lucky_attachment"
+   require "latch"
    ```
 
 ## Configuration
@@ -57,14 +62,14 @@ stored_file.size       # => 102400
 Configure storage backends through Habitat:
 
 ```crystal
-# config/lucky_attachment.cr
+# config/latch.cr
 
-Lucky::Attachment.configure do |settings|
-  settings.storages["cache"] = Lucky::Attachment::Storage::FileSystem.new(
+Latch.configure do |settings|
+  settings.storages["cache"] = Latch::Storage::FileSystem.new(
     directory: "uploads",
     prefix: "cache"
   )
-  settings.storages["store"] = Lucky::Attachment::Storage::FileSystem.new(
+  settings.storages["store"] = Latch::Storage::FileSystem.new(
     directory: "uploads"
   )
   settings.path_prefix = ":model/:id/:attachment"
@@ -74,21 +79,21 @@ end
 For tests, use the in-memory backend:
 
 ```crystal
-# spec/setup/lucky_attachment.cr
+# spec/setup/latch.cr
 
-Lucky::Attachment.configure do |settings|
-  settings.storages["cache"] = Lucky::Attachment::Storage::Memory.new
-  settings.storages["store"] = Lucky::Attachment::Storage::Memory.new
+Latch.configure do |settings|
+  settings.storages["cache"] = Latch::Storage::Memory.new
+  settings.storages["store"] = Latch::Storage::Memory.new
 end
 ```
 
 ## Uploaders
 
-Create an uploader by including `Lucky::Attachment::Uploader`:
+Create an uploader by including `Latch::Uploader`:
 
 ```crystal
 struct ImageUploader
-  include Lucky::Attachment::Uploader
+  include Latch::Uploader
 end
 ```
 
@@ -117,7 +122,8 @@ Override `generate_location` to control where files are stored:
 
 ```crystal
 struct ImageUploader
-  include Lucky::Attachment::Uploader
+  include Latch::Uploader
+
   def generate_location(uploaded_file, metadata, **options) : String
     date = Time.utc.to_s("%Y/%m/%d")
     File.join("images", date, super)
@@ -132,7 +138,7 @@ By default, uploaders use `"cache"` and `"store"` as storage keys. Use the
 
 ```crystal
 struct ImageUploader
-  include Lucky::Attachment::Uploader
+  include Latch::Uploader
 
   # Override both
   storages cache: "tmp", store: "offsite"
@@ -144,11 +150,138 @@ defaults:
 
 ```crystal
 struct ImageUploader
-  include Lucky::Attachment::Uploader
+  include Latch::Uploader
 
   # Only change the store key, cache stays "cache"
   storages store: "offsite"
 end
+```
+
+## Processors
+
+Processors transform uploaded files into variants (e.g. resized images).
+Processing is decoupled from uploading, so it can run inline or in a
+background job.
+
+### Using the MagickProcessor
+
+The built-in `Latch::Processor::Magick` module handles ImageMagick-based
+transformations. It declares its own variant options (`resize`, `gravity`,
+`extent`, `crop`, `quality`, all optional strings). Just include it and
+define variants:
+
+```crystal
+struct AvatarSizesProcessor
+  include Latch::Processor::Magick
+
+  variant large, resize: "2000x2000"
+  variant small, resize: "200x200", gravity: "center"
+end
+```
+
+Each variant option becomes a `-key value` pair passed to `magick convert`.
+Typos and missing required options are caught at compile time.
+
+### Custom processors
+
+Create a module annotated with `@[Latch::VariantOptions(...)]` that includes
+`Latch::Processor`. Use the `process` macro to define per-variant logic.
+The block should return an `IO` with the processed content:
+
+```crystal
+@[Latch::VariantOptions(quality: Int32)]
+module MyQualityProcessor
+  include Latch::Processor
+
+  process do
+    transform(tempfile, variant_options) # returns IO
+  end
+end
+
+struct QualityProcessor
+  include MyQualityProcessor
+
+  variant high, quality: 95
+  variant low, quality: 30
+end
+```
+
+The block runs inside a download/variant loop with `stored_file`, `storage`,
+`name`, `tempfile`, `variant_name`, and `variant_options` in scope. Location
+calculation and uploading are handled automatically.
+
+For full control, you can bypass the `process` macro and generate
+`self.process` directly:
+
+```crystal
+@[Latch::VariantOptions(quality: Int32)]
+module MyQualityProcessor
+  include Latch::Processor
+
+  macro included
+    def self.process(
+      stored_file : Latch::StoredFile,
+      storage : Latch::Storage,
+      name : String,
+      **options,
+    ) : Nil
+      stored_file.download do |tempfile|
+        VARIANTS.each do |variant_name, variant_options|
+          location = stored_file.variant_location("\#{name}_\#{variant_name}")
+          io = transform(tempfile, variant_options)
+          storage.upload(io, location)
+        end
+      end
+    end
+  end
+end
+```
+
+### Registering processors
+
+Use the `process` macro on your uploader:
+
+```crystal
+struct AvatarUploader
+  include Latch::Uploader
+
+  process sizes, using: AvatarSizesProcessor
+end
+```
+
+### Running processors
+
+Processing runs separately from uploading:
+
+```crystal
+stored = AvatarUploader.store(uploaded_file)
+AvatarUploader.process(stored)
+```
+
+### Accessing variants
+
+The `process` macro generates accessor methods on `StoredFile`, prefixed with
+the processor name:
+
+```crystal
+stored.sizes_large.url     # => "/uploads/abc123/sizes_large.jpg"
+stored.sizes_small.url     # => "/uploads/abc123/sizes_small.jpg"
+stored.sizes_large.exists? # => true (after processing)
+```
+
+Multiple processors can be registered on the same uploader. The processor name
+prevents naming collisions:
+
+```crystal
+struct AvatarUploader
+  include Latch::Uploader
+
+  process sizes, using: AvatarSizesProcessor
+  process quality, using: AvatarQualityProcessor
+end
+
+stored.sizes_large.url    # => "/uploads/abc123/sizes_large.jpg"
+stored.quality_high.url   # => "/uploads/abc123/quality_high.jpg"
 ```
 
 ## Storage backends
@@ -158,7 +291,7 @@ end
 Stores files on the local filesystem:
 
 ```crystal
-Lucky::Attachment::Storage::FileSystem.new(
+Latch::Storage::FileSystem.new(
   directory: "uploads",
   prefix: "cache",                # optional subdirectory
   clean: true,                    # clean empty parent dirs on delete (default)
@@ -173,7 +306,7 @@ Stores files on AWS S3 or any S3-compatible service (RustFS, Tigris,
 Cloudflare R2):
 
 ```crystal
-Lucky::Attachment::Storage::S3.new(
+Latch::Storage::S3.new(
   bucket: "my-bucket",
   region: "eu-west-1",
   access_key_id: ENV["AWS_ACCESS_KEY_ID"],
@@ -207,7 +340,7 @@ stored_file.url(expires_in: 1.hour)
 In-memory storage for testing:
 
 ```crystal
-storage = Lucky::Attachment::Storage::Memory.new(
+storage = Latch::Storage::Memory.new(
   base_url: "https://cdn.example.com"  # optional
 )
 storage.clear!  # reset between tests
@@ -215,10 +348,10 @@ storage.clear!  # reset between tests
 
 ### Custom storage
 
-Implement your own by inheriting from `Lucky::Attachment::Storage`:
+Implement your own by inheriting from `Latch::Storage`:
 
 ```crystal
-class MyStorage < Lucky::Attachment::Storage
+class MyStorage < Latch::Storage
   def upload(io : IO, id : String, **options) : Nil
   end
 
@@ -260,12 +393,13 @@ These can be registered on your uploader with the `extract` macro:
 
 ```crystal
 struct ImageUploader
-  include Lucky::Attachment::Uploader
+  include Latch::Uploader
+
   # Replace the default MIME extractor with one that uses the file utility
-  extract mime_type, using: Lucky::Attachment::Extractor::MimeFromFile
+  extract mime_type, using: Latch::Extractor::MimeFromFile
 
   # Add image dimension extraction
-  extract dimensions, using: Lucky::Attachment::Extractor::DimensionsFromMagick
+  extract dimensions, using: Latch::Extractor::DimensionsFromMagick
 end
 ```
 
@@ -273,7 +407,8 @@ Shorter aliases are available inside uploader definitions:
 
 ```crystal
 struct ImageUploader
-  include Lucky::Attachment::Uploader
+  include Latch::Uploader
+
   extract mime_type, using: MimeFromFileExtractor
   extract dimensions, using: DimensionsFromMagickExtractor
 end
@@ -281,11 +416,11 @@ end
 
 ### Custom extractors
 
-Create a struct that includes `Lucky::Attachment::Extractor`:
+Create a struct that includes `Latch::Extractor`:
 
 ```crystal
 struct PageCountExtractor
-  include Lucky::Attachment::Extractor
+  include Latch::Extractor
 
   def extract(uploaded_file, metadata, **options) : Int32?
     # Return the value to store, or nil to skip
@@ -298,7 +433,7 @@ Then register it:
 
 ```crystal
 struct PdfUploader
-  include Lucky::Attachment::Uploader
+  include Latch::Uploader
   extract pages, using: PageCountExtractor
 end
 
@@ -349,7 +484,7 @@ StoredFile serializes to a format compatible with
 
 ## Contributing
 
-1. Fork it (<https://github.com/wout/lucky_attachment/fork>)
+1. Fork it (<https://github.com/wout/latch/fork>)
 2. Create your feature branch (`git checkout -b my-new-feature`)
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
