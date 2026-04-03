@@ -349,14 +349,36 @@ added:
 User::SaveOperation.update!(user, delete_avatar: true)
 ```
 
+### Processing attachments
+
+To run processors (e.g. image variants) after promotion, pass `process: true`:
+
+```crystal
+class User::SaveOperation < User::BaseOperation
+  attach avatar, process: true
+end
+```
+
+For background processing, pass a block instead. The promoted stored file and
+the record are yielded:
+
+```crystal
+class User::SaveOperation < User::BaseOperation
+  attach avatar do |stored_file, record|
+    ProcessAvatarJob.perform_async(stored_file.id, record.id)
+  end
+end
+```
+
 ### Upload flow
 
 Uploading happens automatically through the SaveOperation lifecycle:
 
 1. **Before save** the file is uploaded to cache storage
 2. **After commit** the cached file is promoted to permanent storage
-3. **On update** the old file is deleted before the new one is promoted
-4. **On delete** the attached file is removed from storage
+3. **After promotion** processors run (if `process: true` or a block is given)
+4. **On update** the old file is deleted before the new one is promoted
+5. **On delete** the attached file is removed from storage
 
 ```crystal
 # Create with attachment

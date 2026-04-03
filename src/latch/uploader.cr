@@ -205,6 +205,10 @@ module Latch::Uploader
         .map { |const| using.resolve.constant(const) }
     %}
 
+    {% unless @type.has_constant?(:HAS_PROCESSORS) %}
+      HAS_PROCESSORS = true
+    {% end %}
+
     @@processor_procs << ->(
       stored_file : {{ @type }}::StoredFile,
       storage : Latch::Storage

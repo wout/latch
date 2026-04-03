@@ -94,12 +94,16 @@ module Latch::Avram::SaveOperation
   # committing to the database the attachment will be moved to the permanent
   # storage.
   #
-  macro attach(name, field_name = nil)
+  macro attach(name, field_name = nil, process = false, &block)
     {%
       field_name = "#{name}_file".id if field_name.nil?
 
       unless column = T.constant(:COLUMNS).find { |col| col[:name].stringify == name.stringify }
         raise %(The `#{T.name}` model does not have a column named `#{name}`)
+      end
+
+      if process && block
+        raise "Cannot use both `process: true` and a block with `attach`"
       end
     %}
 
@@ -151,6 +155,47 @@ module Latch::Avram::SaveOperation
         location: File.join(prefix, File.basename(cached.id))
       )
       T::SaveOperation.update!(record, {{ name }}: stored)
+
+      {% if process %}
+        stored.process
+      {% elsif block %}
+        {% if block.args.size > 0 %}{{ block.args[0] }} = stored{% end %}
+        {% if block.args.size > 1 %}{{ block.args[1] }} = record{% end %}
+        {{ block.body }}
+      {% end %}
     end
+
+    {% if process %}
+      macro finished
+        \{%
+          uploader = T.constant(:ATTACHMENT_UPLOADER_{{ name.stringify.upcase.id }}).resolve
+
+          unless uploader.has_constant?(:HAS_PROCESSORS)
+            raise <<-ERROR
+
+            `attach {{ name }}, process: true` on #{@type} but `#{uploader}`
+            has no processors registered.
+
+            Try this...
+
+              ▸ Register a processor on the uploader:
+
+                struct #{uploader}
+                  include Latch::Uploader
+
+                  process sizes, using: MySizesProcessor
+                end
+
+              ▸ Or use a block for custom processing:
+
+                attach {{ name }} do |stored_file, record|
+                  ProcessJob.perform_async(stored_file.id)
+                end
+
+            ERROR
+          end
+        \%}
+      end
+    {% end %}
   end
 end
