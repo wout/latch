@@ -42,12 +42,25 @@ module Latch::Processor
         **options,
       ) : Nil
         stored_file.download do |tempfile|
+          channel = Channel(Exception?).new(VARIANTS.size)
+
           VARIANTS.each do |variant_name, variant_options|
-            location = stored_file.variant_location("#{name}_#{variant_name}")
-            io = begin
-              {{ block.body }}
+            spawn do
+              location = stored_file.variant_location("#{name}_#{variant_name}")
+              io = begin
+                {{ block.body }}
+              end
+              storage.upload(io, location)
+              channel.send(nil)
+            rescue ex
+              channel.send(ex)
             end
-            storage.upload(io, location)
+          end
+
+          VARIANTS.size.times do
+            if ex = channel.receive
+              raise ex
+            end
           end
 
           if (original = ORIGINAL_OPTIONS.first?)
