@@ -1,3 +1,5 @@
+require "./validations"
+
 # Integrates Latch uploads with Avram models.
 #
 # Include this module in your model to use the `attach` macro for declaring
@@ -80,6 +82,8 @@ module Latch::Avram::Model
 end
 
 module Latch::Avram::SaveOperation
+  include Latch::Avram::Validations
+
   # Registers a file attribute for an existing attachment on the model.
   #
   # ```
