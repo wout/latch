@@ -1,39 +1,61 @@
 # Latch
 
-File uploads with pluggable storage backends, metadata extraction, variant
-processing, and a two-stage upload workflow. Supports local filesystem,
-S3-compatible services, and in-memory storage for testing.
+File attachments for Crystal. Cache, promote, process, and serve uploads with
+pluggable storage, metadata extraction, and file variant generation.
 
-The name is short for **L**ucky **At**ta**ch**ment. This shard was originally
-created for [Lucky Framework](https://github.com/luckyframework/lucky), but it
-can be used in any Crystal app.
-
-- **Pluggable storage.** Ships with FileSystem, S3, and Memory backends, or
-  build your own.
-- **Metadata extraction.** Filename, MIME type, size, and image dimensions
-  out of the box.
-- **Async file processing.** Create image variants or process videos, right
-  after a commit or in a worker.
 - **Two-stage uploads.** Cache first, promote later for safer form handling.
-- **JSON-serializable.** StoredFile objects serialize to JSON for easy
-  persistence in your database.
+- **File processing.** Constrain originals, create variants, run in parallel.
+- **Avram integration.** Attach files to models with a single macro.
+- **Pluggable storage.** FileSystem, S3, and Memory out of the box.
+- **Metadata extraction.** Filename, MIME type, size, and image dimensions.
+- **Framework-agnostic.** Built-in Lucky support, adaptable to Kemal or any
+  other Crystal framework.
 
 ## Quick start
 
-```crystal
-require "latch"
+Set up your uploader:
 
-# Define an uploader
-struct ImageUploader
-  include Latch::Uploader
+```crystal
+# src/uploaders/avatar_uploader.cr
+
+struct AvatarProcessor
+  include Latch::Processor::Magick
+
+  original resize: "2000x2000>"
+  variant thumb, resize: "200x200", gravity: "center"
 end
 
-# Upload a file
-stored_file = ImageUploader.store(uploaded_file)
-stored_file.url        # => "/uploads/a1b2c3d4.jpg"
-stored_file.filename   # => "photo.jpg"
-stored_file.mime_type  # => "image/jpeg"
-stored_file.size       # => 102400
+struct AvatarUploader
+  include Latch::Uploader
+
+  extract dimensions, using: DimensionsFromMagickExtractor
+  process versions, using: AvatarProcessor
+end
+
+# src/models/user.cr
+
+class User < BaseModel
+  include Latch::Avram::Model
+
+  table do
+    attach avatar : AvatarUploader::StoredFile?
+  end
+end
+
+# src/operations/save_user.cr
+
+class User::SaveOperation < User::BaseOperation
+  attach avatar, process: true
+end
+```
+
+Uploader a file:
+
+```crystal
+user = User::SaveOperation.create!(avatar_file: uploaded_file)
+user.avatar.url # => "/uploads/user/1/avatar/a1b2c3d4.jpg"
+user.avatar.versions_thumb.url # => "/uploads/user/1/avatar/a1b2c3d4/versions_thumb.jpg"
+user.avatar.width # => 2000
 ```
 
 ## Installation
@@ -48,31 +70,30 @@ stored_file.size       # => 102400
 
 2. Run `shards install`
 
-3. Require the shard with your framework integration:
+3. Require Latch with your framework integration:
 
    ```crystal
-   # src/shards.cr
-
-   # ...
    require "latch"
-   require "latch/lucky/avram" # for Lucky + Avram
-   # or just require "latch/lucky/uploaded_file" for Lucky without Avram
-   # or just require "latch/avram/model" for Avram without Lucky
+   require "latch/lucky/avram" # Lucky + Avram
+   ```
+
+   Other combinations:
+
+   ```crystal
+   require "latch/lucky/uploaded_file" # Lucky without Avram
+   require "latch/avram/model"         # Avram without Lucky
    ```
 
 ## Configuration
 
-Configure storage backends through Habitat:
-
 ```crystal
-# config/latch.cr
-
 Latch.configure do |settings|
-  # Configure storages
-  settings.storages["cache"] = Latch::Storage::FileSystem.new( directory: "uploads", prefix: "cache")
-  settings.storages["store"] = Latch::Storage::FileSystem.new( directory: "uploads")
-
-  # Configure the prefix for where files need to be stored
+  settings.storages["cache"] = Latch::Storage::FileSystem.new(
+    directory: "uploads", prefix: "cache"
+  )
+  settings.storages["store"] = Latch::Storage::FileSystem.new(
+    directory: "uploads"
+  )
   settings.path_prefix = ":model/:id/:attachment"
 end
 ```
@@ -80,8 +101,6 @@ end
 For tests, use the in-memory backend:
 
 ```crystal
-# spec/setup/latch.cr
-
 Latch.configure do |settings|
   settings.storages["cache"] = Latch::Storage::Memory.new
   settings.storages["store"] = Latch::Storage::Memory.new
@@ -90,38 +109,31 @@ end
 
 ## Uploaders
 
-Create an uploader by including `Latch::Uploader`:
+An uploader defines how files are stored and what metadata is extracted.
 
 ```crystal
-# src/uploaders/image_uploader.cr
-
 struct ImageUploader
   include Latch::Uploader
 end
 ```
 
-Each uploader automatically extracts `filename`, `mime_type`, and `size` from
-the uploaded file. The extracted values are available as methods on the returned
-`StoredFile`.
+Every uploader automatically extracts `filename`, `mime_type`, and `size`.
+These are available as methods on the returned `StoredFile`.
 
 ### Uploading files
 
-There are three ways to upload:
-
 ```crystal
-# Cache a file (temporary storage, e.g. between form submissions)
+# Cache (temporary storage, e.g. between form submissions)
 cached = ImageUploader.cache(uploaded_file)
 
-# Promote a cached file to permanent storage
+# Promote from cache to permanent storage
 stored = ImageUploader.promote(cached)
 
-# Or upload directly to permanent storage
+# Or store directly
 stored = ImageUploader.store(uploaded_file)
 ```
 
 ### Custom upload locations
-
-Override `generate_location` to control where files are stored:
 
 ```crystal
 struct ImageUploader
@@ -136,8 +148,8 @@ end
 
 ### Custom storage keys
 
-By default, uploaders use `"cache"` and `"store"` as storage keys. Use the
-`storages` macro to change them:
+By default, uploaders use `"cache"` and `"store"`. Override with the
+`storages` macro:
 
 ```crystal
 struct ImageUploader
@@ -147,62 +159,87 @@ struct ImageUploader
 end
 ```
 
-You only need to specify the keys you want to change, the others keep their
-defaults:
+## Avram integration
+
+Latch integrates with [Avram](https://github.com/luckyframework/avram) for
+model-level file attachments with automatic caching, promotion, and cleanup.
+
+### Model setup
+
+Use the `attach` macro inside a `table` block. The column should be a `jsonb`
+type in your migration:
 
 ```crystal
-struct ImageUploader
-  include Latch::Uploader
+class User < BaseModel
+  include Latch::Avram::Model
 
-  # Only change the store key, cache stays "cache"
-  storages store: "offsite"
+  table do
+    attach avatar : ImageUploader::StoredFile?
+  end
 end
 ```
+
+```crystal
+# In your migration
+add avatar : JSON::Any?
+```
+
+### SaveOperation setup
+
+The `attach` macro registers a file attribute and lifecycle hooks:
+
+```crystal
+class User::SaveOperation < User::BaseOperation
+  attach avatar
+end
+```
+
+The file attribute defaults to `avatar_file`. A custom name can be provided:
+
+```crystal
+attach avatar, field_name: "avatar_upload"
+```
+
+For nilable attachments, a `delete_avatar` attribute is added automatically:
+
+```crystal
+User::SaveOperation.update!(user, delete_avatar: true)
+```
+
+### Processing after upload
+
+To run processors after promotion, pass `process: true`:
+
+```crystal
+attach avatar, process: true
+```
+
+For background processing, pass a block instead:
+
+```crystal
+attach avatar do |stored_file, record|
+  ProcessAvatarJob.perform_async(stored_file.id, record.id)
+end
+```
+
+### Upload lifecycle
+
+1. **Before save** the file is cached to temporary storage
+2. **After commit** the cached file is promoted to permanent storage
+3. **After promotion** processors run (if configured)
+4. **On update** the old file is replaced
+5. **On delete** the attached file is removed
 
 ## Processors
 
-Processors transform uploaded files into variants (e.g. resized images) and
-can optionally modify the original. Processing is decoupled from uploading,
-so it can run inline or in a background job.
+Processors transform uploaded files into variants and can optionally modify
+the original. Processing is decoupled from uploading, runs in parallel for
+variants, and can be triggered inline or in a background job.
 
-### Using the MagickProcessor
+### ImageMagick processor
 
-The built-in `Latch::Processor::Magick` module handles ImageMagick-based
-transformations. It declares its own variant options (`resize`, `gravity`,
-`extent`, `crop`, `quality`, all optional strings). Just include it and
-define variants:
-
-```crystal
-struct AvatarSizesProcessor
-  include Latch::Processor::Magick
-
-  variant large, resize: "2000x2000"
-  variant small, resize: "200x200", gravity: "center"
-end
-```
-
-Each variant option becomes a `-key value` pair passed to `magick convert`.
-Typos and missing required options are caught at compile time.
-
-> [!IMPORTANT]
-> This processor expects ImageMagick to be installed.
-
-### Processing the original
-
-Use the `original` macro to process the uploaded file in place, without
-creating a variant copy. This is useful for constraining dimensions or
-stripping metadata:
-
-```crystal
-struct AvatarProcessor
-  include Latch::Processor::Magick
-
-  original resize: "2000x2000>"
-end
-```
-
-You can combine `original` with `variant`. Variants are always processed
-first so they use the maximum available quality:
+The built-in `Latch::Processor::Magick` module wraps `magick convert`. Define
+variants with compile-time validated options:
 
 ```crystal
 struct AvatarProcessor
@@ -214,14 +251,62 @@ struct AvatarProcessor
 end
 ```
 
+Available options: `resize`, `gravity`, `extent`, `crop`, `quality` (all
+optional strings). Typos and missing required options are caught at compile
+time.
+
+> [!IMPORTANT]
+> Requires ImageMagick to be installed.
+
+### Processing the original
+
+The `original` macro processes the uploaded file in place without creating a
+copy. Variants are always processed first so they use the maximum available
+quality.
+
+```crystal
+struct AvatarProcessor
+  include Latch::Processor::Magick
+
+  original resize: "2000x2000>"
+end
+```
+
 > [!NOTE]
-> If the `original` macro is not declared, the file will remain as-is.
+> If `original` is not declared, the uploaded file remains as-is.
+
+### Registering and running processors
+
+Register a processor on an uploader with the `process` macro:
+
+```crystal
+struct AvatarUploader
+  include Latch::Uploader
+
+  process versions, using: AvatarProcessor
+end
+```
+
+Processing runs separately from uploading:
+
+```crystal
+stored = AvatarUploader.store(uploaded_file)
+stored.process
+```
+
+Variant accessors are generated on `StoredFile`, prefixed with the processor
+name:
+
+```crystal
+stored.versions_large.url     # => "/uploads/abc123/versions_large.jpg"
+stored.versions_thumb.url     # => "/uploads/abc123/versions_thumb.jpg"
+stored.versions_thumb.exists? # => true
+```
 
 ### Custom processors
 
-Create a module annotated with `@[Latch::VariantOptions(...)]` that includes
-`Latch::Processor`. Use the `process` macro to define per-variant logic.
-The block should return an `IO` with the processed content:
+Create a module with `@[Latch::VariantOptions(...)]` and use the `process`
+macro to define per-variant logic. The block should return an `IO`:
 
 ```crystal
 @[Latch::VariantOptions(quality: Int32)]
@@ -229,7 +314,7 @@ module MyQualityProcessor
   include Latch::Processor
 
   process do
-    do_your_thing_with_the(tempfile, variant_options) # and return an IO
+    do_your_thing_with_the(tempfile, variant_options) # return an IO
   end
 end
 
@@ -241,12 +326,11 @@ struct QualityProcessor
 end
 ```
 
-The block runs inside a download/variant loop with `stored_file`, `storage`,
-`name`, `tempfile`, `variant_name`, and `variant_options` in scope. Location
-calculation and uploading are handled automatically.
+The block runs with `stored_file`, `storage`, `name`, `tempfile`,
+`variant_name`, and `variant_options` in scope.
 
-For full control, you can bypass the `process` macro and generate
-`self.process` directly:
+For full control, bypass the `process` macro and generate `self.process`
+directly with an `included` macro:
 
 ```crystal
 @[Latch::VariantOptions(quality: Int32)]
@@ -263,9 +347,7 @@ module MyQualityProcessor
       stored_file.download do |tempfile|
         VARIANTS.each do |variant_name, variant_options|
           location = stored_file.variant_location("\#{name}_\#{variant_name}")
-
-          io = do_your_thing_with_the(tempfile, variant_options) # and return an IO
-
+          io = do_your_thing_with_the(tempfile, variant_options)
           storage.upload(io, location)
         end
       end
@@ -274,162 +356,9 @@ module MyQualityProcessor
 end
 ```
 
-### Registering processors
-
-Use the `process` macro on your uploader:
-
-```crystal
-struct AvatarUploader
-  include Latch::Uploader
-
-  process sizes, using: AvatarSizesProcessor
-end
-```
-
-### Running processors
-
-Processing runs separately from uploading:
-
-```crystal
-stored = AvatarUploader.store(uploaded_file)
-AvatarUploader.process(stored)
-
-# or call it directly on the stored file
-stored.process
-```
-
-### Accessing variants
-
-The `process` macro generates accessor methods on `StoredFile`, prefixed with
-the processor name:
-
-```crystal
-stored.sizes_large.url     # => "/uploads/abc123/sizes_large.jpg"
-stored.sizes_small.url     # => "/uploads/abc123/sizes_small.jpg"
-stored.sizes_large.exists? # => true (after processing)
-```
-
-Multiple processors can be registered on the same uploader. The processor name
-prevents naming collisions:
-
-```crystal
-struct AvatarUploader
-  include Latch::Uploader
-
-  process sizes, using: AvatarSizesProcessor
-  process quality, using: AvatarQualityProcessor
-end
-
-stored.sizes_large.url    # => "/uploads/abc123/sizes_large.jpg"
-stored.quality_high.url   # => "/uploads/abc123/quality_high.jpg"
-```
-
-## Avram integration
-
-Latch integrates with [Avram](https://github.com/luckyframework/avram) models
-through the `Latch::Avram::Model` module. This is an optional module that
-requires Avram as a dependency.
-
-```crystal
-require "latch/avram/model"
-```
-
-### Model setup
-
-Include `Latch::Avram::Model` in your model and use the `attach` macro inside
-the `table` block. The type should be the uploader's `StoredFile` class:
-
-```crystal
-class User < BaseModel
-  include Latch::Avram::Model
-
-  table do
-    # Assumes a jsonb column "avatar" in the database
-    attach avatar : ImageUploader::StoredFile?
-  end
-end
-```
-
-In your migration:
-
-```crystal
-add avatar : JSON::Any?
-```
-
-### SaveOperation setup
-
-The `attach` macro on a SaveOperation registers a file attribute and lifecycle
-hooks for caching and promoting the upload:
-
-```crystal
-class User::SaveOperation < User::BaseOperation
-  permit_columns # ...
-  attach avatar
-end
-```
-
-By default the file attribute is named `<attachment>_file` (e.g. `avatar_file`).
-A custom name can be provided:
-
-```crystal
-attach avatar, field_name: "avatar_upload"
-```
-
-For nilable attachments, a `delete_<attachment>` attribute is automatically
-added:
-
-```crystal
-User::SaveOperation.update!(user, delete_avatar: true)
-```
-
-### Processing attachments
-
-To run processors (e.g. image variants) after promotion, pass `process: true`:
-
-```crystal
-class User::SaveOperation < User::BaseOperation
-  attach avatar, process: true
-end
-```
-
-For background processing, pass a block instead. The promoted stored file and
-the record are yielded:
-
-```crystal
-class User::SaveOperation < User::BaseOperation
-  attach avatar do |stored_file, record|
-    ProcessAvatarJob.perform_async(stored_file.id, record.id)
-  end
-end
-```
-
-### Upload flow
-
-Uploading happens automatically through the SaveOperation lifecycle:
-
-1. **Before save** the file is uploaded to cache storage
-2. **After commit** the cached file is promoted to permanent storage
-3. **After promotion** processors run (if `process: true` or a block is given)
-4. **On update** the old file is deleted before the new one is promoted
-5. **On delete** the attached file is removed from storage
-
-```crystal
-# Create with attachment
-user = User::SaveOperation.create!(avatar_file: uploaded_file)
-user.avatar.url # => "/uploads/user/1/avatar/abc123.jpg"
-
-# Update replaces the old file
-User::SaveOperation.update!(user, avatar_file: new_file)
-
-# Delete removes the file from storage
-User::DeleteOperation.delete!(user)
-```
-
 ## Storage backends
 
 ### FileSystem
-
-Stores files on the local filesystem:
 
 ```crystal
 Latch::Storage::FileSystem.new(
@@ -443,8 +372,12 @@ Latch::Storage::FileSystem.new(
 
 ### S3
 
-Stores files on AWS S3 or any S3-compatible service (RustFS, Tigris,
-Cloudflare R2):
+Works with AWS S3 and any S3-compatible service
+([RustFS](https://github.com/rustfs/rustfs), Tigris, Cloudflare R2):
+
+> [!NOTE]
+> RustFS is the open-source successor to MinIO, whose repository has been
+> archived.
 
 ```crystal
 Latch::Storage::S3.new(
@@ -489,7 +422,7 @@ storage.clear!  # reset between tests
 
 ### Custom storage
 
-Implement your own by inheriting from `Latch::Storage`:
+Inherit from `Latch::Storage` and implement five methods:
 
 ```crystal
 class MyStorage < Latch::Storage
@@ -522,29 +455,13 @@ Every uploader registers three extractors by default:
 | `MimeFromIO`     | `mime_type` | MIME type from the Content-Type header |
 | `SizeFromIO`     | `size`      | File size in bytes                     |
 
-### Additional extractors
-
-These can be registered on your uploader with the `extract` macro:
+Additional extractors can be registered with the `extract` macro:
 
 | Extractor              | Key(s)            | Requires                        |
 | ---------------------- | ----------------- | ------------------------------- |
-| `MimeFromExtension`    | `mime_type`       | -                               |
+| `MimeFromExtension`    | `mime_type`       |                                 |
 | `MimeFromFile`         | `mime_type`       | `file` CLI tool                 |
 | `DimensionsFromMagick` | `width`, `height` | `magick` or `identify` CLI tool |
-
-```crystal
-struct ImageUploader
-  include Latch::Uploader
-
-  # Replace the default MIME extractor with one that uses the file utility
-  extract mime_type, using: Latch::Extractor::MimeFromFile
-
-  # Add image dimension extraction
-  extract dimensions, using: Latch::Extractor::DimensionsFromMagick
-end
-```
-
-Shorter aliases are available inside uploader definitions:
 
 ```crystal
 struct ImageUploader
@@ -564,13 +481,12 @@ struct PageCountExtractor
   include Latch::Extractor
 
   def extract(uploaded_file, metadata, **options) : Int32?
-    # Return the value to store, or nil to skip
     count_pages(uploaded_file.tempfile)
   end
 end
 ```
 
-Then register it:
+Register it and access the value on the stored file:
 
 ```crystal
 struct PdfUploader
@@ -578,35 +494,25 @@ struct PdfUploader
   extract pages, using: PageCountExtractor
 end
 
-stored_file = PdfUploader.store(uploaded_file)
-stored_file.pages  # => 24
+stored = PdfUploader.store(uploaded_file)
+stored.pages # => 24
 ```
 
 ## Working with stored files
 
-`StoredFile` objects are JSON-serializable and provide several convenience
-methods:
+`StoredFile` objects are JSON-serializable and provide convenience methods for
+accessing, downloading, and streaming files:
 
 ```crystal
-stored_file.url                    # storage URL
-stored_file.exists?                # check existence
-stored_file.extension              # file extension
-stored_file.delete                 # remove from storage
+stored.url                    # storage URL
+stored.exists?                # check existence
+stored.extension              # file extension
+stored.delete                 # remove from storage
 
-# Read content
-stored_file.open { |io| io.gets_to_end }
-
-# Download to a temp file
-stored_file.download do |tempfile|
-  process(tempfile.path)
-end
-# tempfile is automatically cleaned up
-
-# Stream to an IO
-stored_file.stream(response.output)
+stored.open { |io| io.gets_to_end }         # read content
+stored.download { |tempfile| use(tempfile) } # download to tempfile
+stored.stream(response.output)               # stream to IO
 ```
-
-### JSON format
 
 StoredFile serializes to a format compatible with
 [Shrine](https://shrinerb.com):
@@ -623,11 +529,10 @@ StoredFile serializes to a format compatible with
 }
 ```
 
-## Framework integration
+## Other frameworks
 
-Latch ships with built-in support for Lucky's `Lucky::UploadedFile`. Other
-frameworks can be supported by implementing the `Latch::UploadedFile` interface,
-which requires only `tempfile` and `filename`:
+Latch works with any Crystal framework. Implement the `Latch::UploadedFile`
+module on your framework's upload class:
 
 ```crystal
 module Latch::UploadedFile
@@ -635,19 +540,18 @@ module Latch::UploadedFile
   abstract def filename : String
 
   # Optional overrides with sensible defaults:
-  # def path : String        -> tempfile.path
+  # def path : String         -> tempfile.path
   # def content_type : String? -> nil
-  # def size : UInt64        -> tempfile.size
+  # def size : UInt64         -> tempfile.size
 end
 ```
 
-### Kemal
+### Kemal example
 
 ```crystal
 require "kemal"
 require "latch"
 
-# Make Kemal's FileUpload compatible with Latch
 struct Kemal::FileUpload
   include Latch::UploadedFile
 
@@ -658,10 +562,6 @@ struct Kemal::FileUpload
   def content_type : String?
     headers["Content-Type"]?
   end
-end
-
-struct ImageUploader
-  include Latch::Uploader
 end
 
 post "/upload" do |env|
