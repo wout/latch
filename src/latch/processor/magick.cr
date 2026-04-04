@@ -26,7 +26,7 @@ module Latch::Processor::Magick
   process do
     args = process_build_args(variant_options)
     output = File.tempfile("latch-variant")
-    run_command("magick", ["convert", tempfile.path] + args + [output.path])
+    run_magick_convert(tempfile.path, args, output.path)
     output.tap(&.rewind)
   end
 
@@ -38,6 +38,13 @@ module Latch::Processor::Magick
         .map(&.annotation(Latch::VariantOptions))
         .first
     %}
+
+    # Runs `magick convert`, falling back to `convert` for ImageMagick 6.
+    private def self.run_magick_convert(input : String, args : Array(String), output : String) : Nil
+      run_command("magick", ["convert", input] + args + [output])
+    rescue Latch::CliToolNotFound
+      run_command("convert", [input] + args + [output])
+    end
 
     # Builds an array of CLI flag/value pairs from a variant's options.
     private def self.process_build_args(variant) : Array(String)
