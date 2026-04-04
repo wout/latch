@@ -574,6 +574,11 @@ post "/upload" do |env|
 end
 ```
 
+## API docs
+
+Online API documentation is available at
+[wout.github.io/latch](https://wout.github.io/latch/).
+
 ## Contributing
 
 1. Fork it (<https://github.com/wout/latch/fork>)
