@@ -3,6 +3,7 @@ require "../../spec_helper"
 private struct TestSizesProcessor
   include Latch::Processor::Magick
 
+  original resize: "40x40"
   variant large, resize: "50x50"
   variant small, resize: "10x10"
 end
@@ -33,6 +34,12 @@ describe Latch::Processor::Magick do
     end
   end
 
+  describe "ORIGINAL_OPTIONS constant" do
+    it "stores the original processing options" do
+      TestSizesProcessor::ORIGINAL_OPTIONS.first[:resize].should eq("40x40")
+    end
+  end
+
   describe "#process" do
     it "creates variant files in storage" do
       stored = ProcessorUploader.store(build_uploaded_file(
@@ -44,6 +51,20 @@ describe Latch::Processor::Magick do
 
       memory_store.exists?(stored.variant_location("sizes_large")).should be_true
       memory_store.exists?(stored.variant_location("sizes_small")).should be_true
+    end
+
+    it "processes the original file in place" do
+      stored = ProcessorUploader.store(build_uploaded_file(
+        path: "spec/fixtures/lucky_logo_tiny.png",
+        filename: "logo.png",
+      ))
+
+      original_content = memory_store.open(stored.id).gets_to_end
+
+      ProcessorUploader.process(stored)
+
+      processed_content = memory_store.open(stored.id).gets_to_end
+      processed_content.should_not eq(original_content)
     end
 
     it "produces resized images" do
