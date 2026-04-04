@@ -1,3 +1,5 @@
+require "./latch/uploaded_file"
+
 require "lucky/uploaded_file"
 require "./lucky/uploaded_file"
 

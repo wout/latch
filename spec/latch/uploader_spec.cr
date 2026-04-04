@@ -482,7 +482,7 @@ private struct CustomLocationUploader
   include Latch::Uploader
 
   def generate_location(
-    uploaded_file : Lucky::UploadedFile,
+    uploaded_file : Latch::UploadedFile,
     metadata : Latch::MetadataHash,
     **options,
   ) : String
@@ -494,7 +494,7 @@ private struct CustomMetadataUploader
   include Latch::Uploader
 
   def extract_metadata(
-    uploaded_file : Lucky::UploadedFile,
+    uploaded_file : Latch::UploadedFile,
     metadata : Latch::MetadataHash? = nil,
     **options,
   ) : Latch::MetadataHash
@@ -508,7 +508,7 @@ private struct StaticExtractor
   include Latch::Extractor
 
   def extract(
-    uploaded_file : Lucky::UploadedFile,
+    uploaded_file : Latch::UploadedFile,
     metadata : Latch::MetadataHash,
     **options,
   ) : String?
@@ -520,7 +520,7 @@ private struct StaticMimeExtractor
   include Latch::Extractor
 
   def extract(
-    uploaded_file : Lucky::UploadedFile,
+    uploaded_file : Latch::UploadedFile,
     metadata : Latch::MetadataHash,
     **options,
   ) : String?

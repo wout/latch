@@ -129,7 +129,7 @@ module Latch::Avram::SaveOperation
         {{ T.constant(:PRIMARY_KEY_NAME).id }}.value
       prefix = T::ATTACHMENT_PREFIX_{{ name.stringify.upcase.id }}.gsub(/:id/, record_id)
       {{ name }}.value = T::ATTACHMENT_UPLOADER_{{ name.stringify.upcase.id }}.cache(
-        upload.as(Lucky::UploadedFile),
+        upload.as(Latch::UploadedFile),
         path_prefix: prefix,
       )
     end

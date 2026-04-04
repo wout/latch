@@ -88,7 +88,7 @@ module Latch::Uploader
     # ```
     #
     def upload(
-      uploaded_file : Lucky::UploadedFile,
+      uploaded_file : Latch::UploadedFile,
       metadata : MetadataHash? = nil,
       **options
     ) : {{ stored_file }}
@@ -107,7 +107,7 @@ module Latch::Uploader
     # ```
     #
     def self.cache(
-      uploaded_file : Lucky::UploadedFile,
+      uploaded_file : Latch::UploadedFile,
       **options
     ) : {{ stored_file }}
       new(self.storages[:cache]).upload(uploaded_file, **options)
@@ -120,7 +120,7 @@ module Latch::Uploader
     # ```
     #
     def self.store(
-      uploaded_file : Lucky::UploadedFile,
+      uploaded_file : Latch::UploadedFile,
       **options
     ) : {{ stored_file }}
       new(self.storages[:store]).upload(uploaded_file, **options)
@@ -208,6 +208,7 @@ module Latch::Uploader
     {% unless @type.has_constant?(:HAS_PROCESSORS) %}
       HAS_PROCESSORS = true
     {% end %}
+
 
     @@processor_procs << ->(
       stored_file : {{ @type }}::StoredFile,
@@ -325,7 +326,7 @@ module Latch::Uploader
   # ```
   #
   def generate_location(
-    uploaded_file : Lucky::UploadedFile,
+    uploaded_file : Latch::UploadedFile,
     metadata : MetadataHash,
     **options,
   ) : String
@@ -349,7 +350,7 @@ module Latch::Uploader
   # ```
   #
   def generate_uid(
-    uploaded_file : Lucky::UploadedFile,
+    uploaded_file : Latch::UploadedFile,
     metadata : MetadataHash,
     **options,
   ) : String
@@ -364,7 +365,7 @@ module Latch::Uploader
   #   include Latch::Uploader
   #
   #   def extract_metadata(
-  #     uploaded_file : Lucky::UploadedFile,
+  #     uploaded_file : Latch::UploadedFile,
   #     metadata : MetadataHash? = nil,
   #     **options,
   #   ) : MetadataHash
@@ -384,7 +385,7 @@ module Latch::Uploader
   # ```
   #
   def extract_metadata(
-    uploaded_file : Lucky::UploadedFile,
+    uploaded_file : Latch::UploadedFile,
     metadata : MetadataHash? = nil,
     **options,
   ) : MetadataHash
@@ -399,7 +400,7 @@ module Latch::Uploader
 
   # Tries to determine the file extension from the metadata or IO.
   protected def file_extension(
-    uploaded_file : Lucky::UploadedFile,
+    uploaded_file : Latch::UploadedFile,
     metadata : MetadataHash,
   ) : String?
     if filename = metadata["filename"]?.try(&.as(String))

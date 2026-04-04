@@ -1,4 +1,6 @@
 class Lucky::UploadedFile
+  include Latch::UploadedFile
+
   # Attempts to extract the content type from the part's headers.
   #
   # ```

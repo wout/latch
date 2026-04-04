@@ -49,7 +49,7 @@ module Latch::RunCommand
   private def run_command(
     command : String,
     args : Array(String),
-    uploaded_file : Lucky::UploadedFile,
+    uploaded_file : Latch::UploadedFile,
   ) : String?
     run_command(command, args, uploaded_file.tempfile)
   end

@@ -8,7 +8,7 @@ module Latch::Extractor
   # (e.g. the dimensions of an image).
   #
   abstract def extract(
-    uploaded_file : Lucky::UploadedFile,
+    uploaded_file : Latch::UploadedFile,
     metadata : MetadataHash,
     **options,
   ) : MetadataValue?
