@@ -16,7 +16,7 @@ The name is short for **L**ucky **At**ta**ch**ment. While originally created for
 Crystal framework.
 
 [![CI](https://github.com/wout/latch/actions/workflows/ci.yml/badge.svg)](https://github.com/wout/latch/actions/workflows/ci.yml)
-[![GitHub release](https://img.shields.io/github/release/wout/latch.svg)](https://github.com/wout/latch/releases)
+[![GitHub tag](https://img.shields.io/github/v/tag/wout/latch)](https://github.com/wout/latch/tags)
 
 ## Quick start
 
