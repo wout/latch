@@ -1,3 +1,5 @@
+require "lucky/uploaded_file"
+
 class Lucky::UploadedFile
   include Latch::UploadedFile
 
