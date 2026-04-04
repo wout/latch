@@ -49,7 +49,7 @@ class User::SaveOperation < User::BaseOperation
 end
 ```
 
-Uploader a file:
+Upload a file:
 
 ```crystal
 user = User::SaveOperation.create!(avatar_file: uploaded_file)
