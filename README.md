@@ -11,6 +11,9 @@ pluggable storage, metadata extraction, and file variant generation.
 - **Framework-agnostic.** Built-in Lucky support, adaptable to Kemal or any
   other Crystal framework.
 
+[![CI](https://github.com/wout/latch/actions/workflows/ci.yml/badge.svg)](https://github.com/wout/latch/actions/workflows/ci.yml)
+[![GitHub release](https://img.shields.io/github/release/wout/latch.svg)](https://github.com/wout/latch/releases)
+
 ## Quick start
 
 Set up your uploader:
