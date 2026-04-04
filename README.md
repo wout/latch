@@ -158,9 +158,9 @@ end
 
 ## Processors
 
-Processors transform uploaded files into variants (e.g. resized images).
-Processing is decoupled from uploading, so it can run inline or in a
-background job.
+Processors transform uploaded files into variants (e.g. resized images) and
+can optionally modify the original. Processing is decoupled from uploading,
+so it can run inline or in a background job.
 
 ### Using the MagickProcessor
 
@@ -183,6 +183,36 @@ Typos and missing required options are caught at compile time.
 
 > [!IMPORTANT]
 > This processor expects ImageMagick to be installed.
+
+### Processing the original
+
+Use the `original` macro to process the uploaded file in place, without
+creating a variant copy. This is useful for constraining dimensions or
+stripping metadata:
+
+```crystal
+struct AvatarProcessor
+  include Latch::Processor::Magick
+
+  original resize: "2000x2000>"
+end
+```
+
+You can combine `original` with `variant`. Variants are always processed
+first so they use the maximum available quality:
+
+```crystal
+struct AvatarProcessor
+  include Latch::Processor::Magick
+
+  original resize: "2000x2000>"
+  variant large, resize: "800x800"
+  variant thumb, resize: "200x200", gravity: "center"
+end
+```
+
+> [!NOTE]
+> If the `original` macro is not declared, the file will remain as-is.
 
 ### Custom processors
 
@@ -588,6 +618,54 @@ StoredFile serializes to a format compatible with
     "mime_type": "image/jpeg"
   }
 }
+```
+
+## Framework integration
+
+Latch ships with built-in support for Lucky's `Lucky::UploadedFile`. Other
+frameworks can be supported by implementing the `Latch::UploadedFile` interface,
+which requires only `tempfile` and `filename`:
+
+```crystal
+module Latch::UploadedFile
+  abstract def tempfile : File
+  abstract def filename : String
+
+  # Optional overrides with sensible defaults:
+  # def path : String        -> tempfile.path
+  # def content_type : String? -> nil
+  # def size : UInt64        -> tempfile.size
+end
+```
+
+### Kemal
+
+```crystal
+require "kemal"
+require "latch"
+
+# Make Kemal's FileUpload compatible with Latch
+struct Kemal::FileUpload
+  include Latch::UploadedFile
+
+  def filename : String
+    @filename || "upload"
+  end
+
+  def content_type : String?
+    headers["Content-Type"]?
+  end
+end
+
+struct ImageUploader
+  include Latch::Uploader
+end
+
+post "/upload" do |env|
+  upload = env.params.files["image"]
+  stored = ImageUploader.store(upload)
+  stored.url
+end
 ```
 
 ## Contributing
