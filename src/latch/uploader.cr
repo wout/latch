@@ -20,19 +20,6 @@ require "uuid"
 module Latch::Uploader
   alias MetadataHash = ::Latch::MetadataHash
 
-  # Adds shorter local aliases for built-in extractors.
-  # e.g. `Latch::Extractor::SizeFromIO` -> `SizeFromIOExtractor`
-  {% for extractor in %w[
-                        DimensionsFromMagick
-                        FilenameFromIO
-                        MimeFromExtension
-                        MimeFromFile
-                        MimeFromIO
-                        SizeFromIO
-                      ] %}
-    alias {{ extractor.id }}Extractor = Latch::Extractor::{{ extractor.id }}
-  {% end %}
-
   macro included
     {% stored_file = "#{@type}::StoredFile".id %}
 

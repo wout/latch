@@ -35,7 +35,7 @@ end
 struct AvatarUploader
   include Latch::Uploader
 
-  extract dimensions, using: DimensionsFromMagickExtractor
+  extract dimensions, using: Latch::Extractor::DimensionsFromMagick
   process versions, using: AvatarProcessor
 end
 
@@ -495,8 +495,8 @@ Additional extractors can be registered with the `extract` macro:
 struct ImageUploader
   include Latch::Uploader
 
-  extract mime_type, using: MimeFromFileExtractor
-  extract dimensions, using: DimensionsFromMagickExtractor
+  extract mime_type, using: Latch::Extractor::MimeFromFile
+  extract dimensions, using: Latch::Extractor::DimensionsFromMagick
 end
 ```
 
