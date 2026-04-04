@@ -78,25 +78,21 @@ module Latch::Processor
     end
   end
 
-  # Validates options against the `@[Latch::VariantOptions(...)]` annotation.
-  # Raises at compile time for unknown keys or missing required options.
-  private macro __validate_options(label, options)
+  # Resolves the `@[Latch::VariantOptions(...)]` annotation, validates the
+  # provided options, builds a NamedTuple, and stores it in the target.
+  private macro __store_validated_options(target, entry_key, label, options)
     {%
       unless anno = @type.annotation(Latch::VariantOptions)
         @type.ancestors.each do |ancestor|
           anno = ancestor.annotation(Latch::VariantOptions) unless anno
         end
       end
-    %}
 
-    {%
       unless anno
         raise "#{@type} must include a processor with a " \
               "@[Latch::VariantOptions(...)] annotation"
       end
-    %}
 
-    {%
       declared_names = anno.named_args.keys
 
       options.keys.each do |key|
@@ -116,37 +112,6 @@ module Latch::Processor
       end
     %}
 
-  end
-
-  # Defines a named variant. Options are validated at compile time against the
-  # `@[Latch::VariantOptions(...)]` annotation on the processor.
-  macro variant(name, **options)
-    __validate_options("variant '#{name.id}'", {{ options }})
-    __build_options_tuple(VARIANTS, {{ name.stringify }}, {{ options }})
-
-    # Adds a compile-time marker for variant name discovery by the uploader. I
-    # tried with a hash, but that wouldn't work.
-    VARIANT_{{ name.id.stringify.upcase.id }} = {{ name.stringify }}
-  end
-
-  # Defines processing options for the original file. The original is processed
-  # after all variants, so they use the maximum available quality.
-  macro original(**options)
-    __validate_options("original", {{ options }})
-    __build_options_tuple(ORIGINAL_OPTIONS, nil, {{ options }})
-  end
-
-  # Builds a NamedTuple from the provided options (filling in nil for
-  # unspecified keys) and stores it in the target collection.
-  private macro __build_options_tuple(target, entry_key, options)
-    {%
-      unless anno = @type.annotation(Latch::VariantOptions)
-        @type.ancestors.each do |ancestor|
-          anno = ancestor.annotation(Latch::VariantOptions) unless anno
-        end
-      end
-    %}
-
     {% if entry_key %}
       {{ target }}[{{ entry_key }}] = {
     {% else %}
@@ -160,5 +125,21 @@ module Latch::Processor
         {% end %}
       {% end %}
     }
+  end
+
+  # Defines a named variant. Options are validated at compile time against the
+  # `@[Latch::VariantOptions(...)]` annotation on the processor.
+  macro variant(name, **options)
+    __store_validated_options(VARIANTS, {{ name.stringify }}, "variant '#{name.id}'", {{ options }})
+
+    # Adds a compile-time marker for variant name discovery by the uploader. I
+    # tried with a hash, but that wouldn't work.
+    VARIANT_{{ name.id.stringify.upcase.id }} = {{ name.stringify }}
+  end
+
+  # Defines processing options for the original file. The original is processed
+  # after all variants, so they use the maximum available quality.
+  macro original(**options)
+    __store_validated_options(ORIGINAL_OPTIONS, nil, "original", {{ options }})
   end
 end
