@@ -21,10 +21,12 @@ module Latch::Processor
       end
     %}
 
-    alias TransformOptions = NamedTuple({{ anno.named_args.double_splat }})
+    alias ProcessOptions = NamedTuple({{ anno.named_args.double_splat }})
 
-    VARIANTS = {} of String => TransformOptions
-    ORIGINAL_OPTIONS = [] of TransformOptions
+    macro included
+      VARIANTS = {} of String => ProcessOptions
+      ORIGINAL_OPTIONS = [] of ProcessOptions
+    end
   end
 
   # Generates the boilerplate `self.process` on the concrete type. The block
