@@ -48,13 +48,16 @@ stored_file.size       # => 102400
 
 2. Run `shards install`
 
-3. Require the shard:
+3. Require the shard with your framework integration:
 
    ```crystal
    # src/shards.cr
 
    # ...
    require "latch"
+   require "latch/lucky/avram" # for Lucky + Avram
+   # or just require "latch/lucky/uploaded_file" for Lucky without Avram
+   # or just require "latch/avram/model" for Avram without Lucky
    ```
 
 ## Configuration
