@@ -229,6 +229,27 @@ attach avatar do |stored_file, record|
 end
 ```
 
+### Validating attachments
+
+Validate file size and MIME type in a `before_save` block:
+
+```crystal
+class User::SaveOperation < User::BaseOperation
+  attach avatar
+
+  before_save do
+    validate_file_size_of avatar_file, max: 5_000_000
+    validate_file_mime_type_of avatar_file, in: %w[image/png image/jpeg image/webp]
+  end
+end
+```
+
+MIME types can also be validated with a pattern:
+
+```crystal
+validate_file_mime_type_of avatar_file, with: /image\/.*/
+```
+
 ### Upload lifecycle
 
 1. **Before save** the file is cached to temporary storage
