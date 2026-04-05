@@ -48,18 +48,18 @@ Set up your uploader:
 ```crystal
 # src/uploaders/avatar_uploader.cr
 
-struct AvatarProcessor
-  include Latch::Processor::Magick
-
-  original resize: "2000x2000>"
-  variant thumb, resize: "200x200", gravity: "center"
-end
-
 struct AvatarUploader
   include Latch::Uploader
 
+  struct VersionsProcessor
+    include Latch::Processor::Magick
+
+    original resize: "2000x2000>"
+    variant thumb, resize: "200x200", gravity: "center"
+  end
+
   extract dimensions, using: Latch::Extractor::DimensionsFromMagick
-  process versions, using: AvatarProcessor
+  process versions, using: VersionsProcessor
 end
 
 # src/models/user.cr
