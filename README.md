@@ -678,6 +678,26 @@ stored = PdfUploader.store(uploaded_file)
 stored.pages # => 24
 ```
 
+An extractor can also write multiple values to metadata directly. Use the
+`@[Latch::MetadataMethods]` annotation to generate typed accessor methods for
+each value:
+
+```crystal
+@[Latch::MetadataMethods(width : Int32, height : Int32)]
+struct DimensionsExtractor
+  include Latch::Extractor
+
+  def extract(uploaded_file, metadata, **options) : Nil
+    metadata["width"] = 800
+    metadata["height"] = 600
+  end
+end
+
+stored = ImageUploader.store(uploaded_file)
+stored.width  # => 800
+stored.height # => 600
+```
+
 ## Working with stored files
 
 `StoredFile` objects are JSON-serializable and provide convenience methods for
