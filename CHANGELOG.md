@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.1] - 2026-04-05
+
+### Added
+
+- **Nilable variant accessors** (e.g. `stored.sizes_thumb?`) that return `nil`
+  if the variant hasn't been processed yet, making template rendering safer.
+
 ## [0.3.0] - 2026-04-05
 
 ### Added
