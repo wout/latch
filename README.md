@@ -330,23 +330,23 @@ custom processors can declare required options.
 <details>
 <summary><strong>Available options</strong></summary>
 
-- `auto_orient: true` → fix orientation from EXIF data
-- `background: "white"` → background color, e.g. "white", "transparent"
-- `colorspace: "sRGB"` → convert color model, e.g. "sRGB", "Gray"
-- `crop: "200x200+10+10"` → cut a region
-- `density: "72"` → resolution in DPI
-- `extent: "800x600"` → pad/canvas size
-- `flatten: true` → merge layers into one
-- `gaussian_blur: "0x3"` → blur effect
-- `gravity: "center"` → anchor point, e.g. "center", "north"
-- `interlace: "Plane"` → progressive rendering
-- `quality: "85"` → compression quality
-- `resize: "800x600"` → scale to fit, e.g. "800x600", "200x200>"
-- `rotate: "90"` → rotate by degrees
-- `sampling_factor: "4:2:0"` → chroma subsampling
-- `sharpen: "0x1"` → sharpen
-- `strip: true` → remove all metadata and profiles
-- `thumbnail: "200x200"` → like resize but strips profiles for smaller files
+- `auto_orient: true` (`Bool`) → fix orientation from EXIF data
+- `background: "white"` (`String`) → background color, e.g. "white", "transparent"
+- `colorspace: "sRGB"` (`String`) → convert color model, e.g. "sRGB", "Gray"
+- `crop: "200x200+10+10"` (`String`) → cut a region
+- `density: 72` (`Int32 | String`) → resolution in DPI, e.g. 72 or "72x72"
+- `extent: "800x600"` (`String`) → pad/canvas size
+- `flatten: true` (`Bool`) → merge layers into one
+- `gaussian_blur: "0x3"` (`String`) → blur effect
+- `gravity: "center"` (`String`) → anchor point, e.g. "center", "north"
+- `interlace: "Plane"` (`String`) → progressive rendering
+- `quality: 85` (`Int32 | String`) → compression quality
+- `resize: "800x600"` (`String`) → scale to fit, e.g. "800x600", "200x200>"
+- `rotate: 90` (`Int32 | String`) → rotate by degrees
+- `sampling_factor: "4:2:0"` (`String`) → chroma subsampling
+- `sharpen: "0x1"` (`String`) → sharpen
+- `strip: true` (`Bool`) → remove all metadata and profiles
+- `thumbnail: "200x200"` (`String`) → like resize but strips profiles for smaller files
 
 </details>
 
@@ -371,21 +371,21 @@ end
 <details>
 <summary><strong>Available options</strong></summary>
 
-- `audio_bitrate: "128k"` → audio bitrate
-- `audio_codec: "aac"` → audio codec, e.g. "aac", "libopus"
-- `audio_filter: "volume=0.5"` → custom audio filter
-- `crf: "23"` → constant rate factor (quality)
-- `duration: "10"` → max duration in seconds
-- `format: "webm"` → output format, e.g. "mp4", "webm", "image2"
-- `frame_rate: "30"` → output frame rate
-- `frames: "1"` → number of frames to output (for thumbnails)
-- `no_audio: true` → strip audio track
-- `preset: "fast"` → encoding speed/quality, e.g. "fast", "slow"
-- `scale: "1280:720"` → resize, e.g. "1280:720", "-1:480"
-- `start: "00:00:05"` → start time
-- `video_bitrate: "1M"` → video bitrate, e.g. "1M", "500k"
-- `video_codec: "libx264"` → video codec, e.g. "libx264", "libx265"
-- `video_filter: "transpose=1"` → custom video filter
+- `audio_bitrate: "128k"` (`String`) → audio bitrate
+- `audio_codec: "aac"` (`String`) → audio codec, e.g. "aac", "libopus"
+- `audio_filter: "volume=0.5"` (`String`) → custom audio filter
+- `crf: 23` (`Int32 | String`) → constant rate factor (quality)
+- `duration: 10` (`Int32 | String`) → max duration, e.g. 10 or "00:01:30"
+- `format: "webm"` (`String`) → output format, e.g. "mp4", "webm", "image2"
+- `frame_rate: 30` (`Int32 | String`) → output frame rate
+- `frames: 1` (`Int32 | String`) → number of frames to output (for thumbnails)
+- `no_audio: true` (`Bool`) → strip audio track
+- `preset: "fast"` (`String`) → encoding speed/quality, e.g. "fast", "slow"
+- `scale: "1280:720"` (`String`) → resize, e.g. "1280:720", "-1:480"
+- `start: "00:00:05"` (`String`) → start time
+- `video_bitrate: "1M"` (`String`) → video bitrate, e.g. "1M", "500k"
+- `video_codec: "libx264"` (`String`) → video codec, e.g. "libx264", "libx265"
+- `video_filter: "transpose=1"` (`String`) → custom video filter
 
 </details>
 
@@ -410,14 +410,14 @@ end
 <details>
 <summary><strong>Available options</strong></summary>
 
-- `auto_orient: true` → fix orientation from EXIF data
-- `crop: true` → crop to fill instead of shrink-to-fit
-- `format: "webp"` → output format, e.g. "webp", "png"
-- `linear: true` → process in linear color space (higher quality)
-- `quality: 85` → JPEG/WebP compression quality (1-100)
-- `resize: "200x200"` → bounding box, e.g. "200x200", "800x", "2000x2000>"
-- `smartcrop: "attention"` → smart crop mode, e.g. "attention", "entropy"
-- `strip: true` → remove all metadata and profiles
+- `auto_orient: true` (`Bool`) → fix orientation from EXIF data
+- `crop: true` (`Bool`) → crop to fill instead of shrink-to-fit
+- `format: "webp"` (`String`) → output format, e.g. "webp", "png"
+- `linear: true` (`Bool`) → process in linear color space (higher quality)
+- `quality: 85` (`Int32`) → JPEG/WebP compression quality (1-100)
+- `resize: "200x200"` (`String`) → bounding box, e.g. "200x200", "800x", "2000x2000>"
+- `smartcrop: "attention"` (`String`) → smart crop mode, e.g. "attention", "entropy"
+- `strip: true` (`Bool`) → remove all metadata and profiles
 
 </details>
 
