@@ -55,7 +55,7 @@ struct AvatarUploader
     include Latch::Processor::Magick
 
     original resize: "2000x2000>"
-    variant thumb, resize: "200x200", gravity: "center"
+    variant thumb, resize: "200x200", crop: "200x200+0+0", gravity: "center"
   end
 
   extract dimensions, using: Latch::Extractor::DimensionsFromMagick
@@ -320,7 +320,7 @@ struct AvatarProcessor
 
   original resize: "2000x2000>"
   variant large, resize: "800x800"
-  variant thumb, resize: "200x200", gravity: "center"
+  variant thumb, resize: "200x200", crop: "200x200+0+0", gravity: "center"
 end
 ```
 
