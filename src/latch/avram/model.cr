@@ -163,8 +163,18 @@ module Latch::Avram::SaveOperation
       {% if process %}
         stored.process
       {% elsif block %}
-        {% if block.args.size > 0 %}{{ block.args[0] }} = stored{% end %}
-        {% if block.args.size > 1 %}{{ block.args[1] }} = record{% end %}
+        {%
+          if block.args.size != 1
+            raise <<-ERR
+            The 'attach' block requires exactly 1 block arg (the record).
+            Example:
+              attach {{ name }} do |record|
+                ProcessJob.perform_async(record.id)
+              end
+            ERR
+          end
+        %}
+        {{ block.args[0] }} = record
         {{ block.body }}
       {% end %}
     end
@@ -192,8 +202,8 @@ module Latch::Avram::SaveOperation
 
               ▸ Or use a block for custom processing:
 
-                attach {{ name }} do |stored_file, record|
-                  ProcessJob.perform_async(stored_file.id)
+                attach {{ name }} do |record|
+                  ProcessJob.perform_async(record.id)
                 end
 
             ERROR

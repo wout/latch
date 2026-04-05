@@ -224,8 +224,8 @@ attach avatar, process: true
 For background processing, pass a block instead:
 
 ```crystal
-attach avatar do |stored_file, record|
-  ProcessAvatarJob.perform_async(stored_file.id, record.id)
+attach avatar do |record|
+  ProcessAvatarJob.perform_async(record.id)
 end
 ```
 
