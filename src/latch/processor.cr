@@ -103,10 +103,7 @@ module Latch::Processor
       end
 
       anno.named_args.each do |key, type|
-        is_nilable = type.is_a?(Generic) &&
-                     type.name.resolve == Union &&
-                     type.type_vars.map(&.resolve).includes?(Nil)
-        unless is_nilable || options.keys.includes?(key)
+        unless type.resolve.nilable? || options.keys.includes?(key)
           raise "Missing required option '#{key.id}' for #{label.id} in #{@type}"
         end
       end

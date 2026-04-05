@@ -14,23 +14,23 @@ require "../run_command"
 # ```
 #
 @[Latch::VariantOptions(
-  auto_orient: Bool?,       # fix orientation from EXIF data
-  background: String?,      # background color, e.g. "white", "transparent"
-  colorspace: String?,      # convert color model, e.g. "sRGB", "Gray"
-  crop: String?,            # cut a region, e.g. "200x200+10+10"
-  density: String?,         # resolution in DPI, e.g. "72"
-  extent: String?,          # pad/canvas size, e.g. "800x600"
-  flatten: Bool?,           # merge layers into one
-  gaussian_blur: String?,   # blur effect, e.g. "0x3"
-  gravity: String?,         # anchor point, e.g. "center", "north"
-  interlace: String?,       # progressive rendering, e.g. "Plane"
-  quality: String?,         # compression quality, e.g. "85"
-  resize: String?,          # scale to fit, e.g. "800x600", "200x200>"
-  rotate: String?,          # rotate by degrees, e.g. "90"
-  sampling_factor: String?, # chroma subsampling, e.g. "4:2:0"
-  sharpen: String?,         # sharpen, e.g. "0x1"
-  strip: Bool?,             # remove all metadata and profiles
-  thumbnail: String?,       # like resize but strips profiles, e.g. "200x200"
+  auto_orient: Bool?,            # fix orientation from EXIF data
+  background: String?,           # background color, e.g. "white", "transparent"
+  colorspace: String?,           # convert color model, e.g. "sRGB", "Gray"
+  crop: String?,                 # cut a region, e.g. "200x200+10+10"
+  density: Latch::StringOrInt,   # resolution in DPI, e.g. 72 or "72x72"
+  extent: String?,               # pad/canvas size, e.g. "800x600"
+  flatten: Bool?,                # merge layers into one
+  gaussian_blur: String?,        # blur effect, e.g. "0x3"
+  gravity: String?,              # anchor point, e.g. "center", "north"
+  interlace: String?,            # progressive rendering, e.g. "Plane"
+  quality: Latch::StringOrInt,   # compression quality, e.g. 85
+  resize: String?,               # scale to fit, e.g. "800x600", "200x200>"
+  rotate: Latch::StringOrInt,    # rotate by degrees, e.g. 90
+  sampling_factor: String?,      # chroma subsampling, e.g. "4:2:0"
+  sharpen: String?,              # sharpen, e.g. "0x1"
+  strip: Bool?,                  # remove all metadata and profiles
+  thumbnail: String?,            # like resize but strips profiles, e.g. "200x200"
 )]
 module Latch::Processor::Magick
   include Latch::Processor

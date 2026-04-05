@@ -3,9 +3,9 @@ require "../../spec_helper"
 private struct TestFFmpegProcessor
   include Latch::Processor::FFmpeg
 
-  original video_codec: "libx264", crf: "23", preset: "ultrafast"
-  variant preview, scale: "32:-2", video_codec: "libx264", crf: "28", preset: "ultrafast"
-  variant thumb, frames: "1", scale: "32:-2"
+  original video_codec: "libx264", crf: 23, preset: "ultrafast"
+  variant preview, scale: "32:-2", video_codec: "libx264", crf: 28, preset: "ultrafast"
+  variant thumb, frames: 1, scale: "32:-2"
 end
 
 private struct FFmpegUploader
@@ -30,9 +30,9 @@ describe Latch::Processor::FFmpeg do
     it "contains all defined variants" do
       TestFFmpegProcessor::VARIANTS.size.should eq(2)
       TestFFmpegProcessor::VARIANTS["preview"][:video_codec].should eq("libx264")
-      TestFFmpegProcessor::VARIANTS["preview"][:crf].should eq("28")
+      TestFFmpegProcessor::VARIANTS["preview"][:crf].should eq(28)
       TestFFmpegProcessor::VARIANTS["preview"][:scale].should eq("32:-2")
-      TestFFmpegProcessor::VARIANTS["thumb"][:frames].should eq("1")
+      TestFFmpegProcessor::VARIANTS["thumb"][:frames].should eq(1)
     end
   end
 
@@ -40,7 +40,7 @@ describe Latch::Processor::FFmpeg do
     it "stores the original processing options" do
       original = TestFFmpegProcessor::ORIGINAL_OPTIONS.first
       original[:video_codec].should eq("libx264")
-      original[:crf].should eq("23")
+      original[:crf].should eq(23)
       original[:preset].should eq("ultrafast")
     end
   end
