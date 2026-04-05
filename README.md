@@ -249,29 +249,27 @@ For background processing, pass a block instead. For example, using
 
 ```crystal
 attach avatar do |record|
-  AvatarProcessingJob.run(record_id: record.id)
+  User::AvatarProcessingJob.run(record_id: record.id)
 end
 ```
 
 The background job:
 
 ```crystal
-struct AvatarProcessingJob
+struct User::AvatarProcessingJob
   include Mel::Job::Now
 
   def initialize(@record_id : Int64)
   end
 
   def run
-    # If the avatar is nilable
+    user = UserQuery.find(@record_id)
+
+    # For nilable attachments:
     user.avatar.try(&.process)
 
-    # or if it is not nilable:
+    # Otherwise simply:
     user.avatar.process
-  end
-
-  private def user
-    user = UserQuery.find(record_id)
   end
 end
 ```
