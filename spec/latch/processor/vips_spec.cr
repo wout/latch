@@ -48,7 +48,6 @@ describe Latch::Processor::Vips do
       stored.responds_to?(:versions_thumb).should be_true
     end
   end
-
 end
 
 private def build_uploaded_file(
