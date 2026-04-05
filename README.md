@@ -469,6 +469,23 @@ stored.versions_thumb.url     # => "/uploads/abc123/versions_thumb.jpg"
 stored.versions_thumb.exists? # => true
 ```
 
+Nilable accessors are also available, returning `nil` if the variant hasn't
+been processed yet:
+
+```crystal
+# Returns nil before processing, the StoredFile after
+stored.versions_thumb?.try(&.url)
+
+# Useful in templates
+if thumb = user.avatar.versions_thumb?
+  img src: thumb.url
+end
+
+# The non-nilable accessor always returns a StoredFile,
+# even if the file doesn't exist in storage yet
+user.avatar.versions_thumb.url
+```
+
 ### Custom processors
 
 Create a module with `@[Latch::VariantOptions(...)]` and use the `process`
