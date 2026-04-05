@@ -18,6 +18,29 @@ Crystal framework.
 [![CI](https://github.com/wout/latch/actions/workflows/ci.yml/badge.svg)](https://github.com/wout/latch/actions/workflows/ci.yml)
 [![GitHub tag](https://img.shields.io/github/v/tag/wout/latch)](https://github.com/wout/latch/tags)
 
+## Table of contents
+
+- [Quick start](#quick-start)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Uploaders](#uploaders)
+- [Avram integration](#avram-integration)
+  - [Model setup](#model-setup)
+  - [SaveOperation setup](#saveoperation-setup)
+  - [Processing after upload](#processing-after-upload)
+  - [Validating attachments](#validating-attachments)
+- [Processors](#processors)
+  - [ImageMagick processor](#imagemagick-processor)
+  - [FFmpeg processor](#ffmpeg-processor)
+  - [Vips processor](#vips-processor)
+  - [Processing the original](#processing-the-original)
+  - [Custom processors](#custom-processors)
+- [Storage backends](#storage-backends)
+- [Metadata extractors](#metadata-extractors)
+- [Working with stored files](#working-with-stored-files)
+- [Other frameworks](#other-frameworks)
+- [API docs](#api-docs)
+
 ## Quick start
 
 Set up your uploader:
@@ -292,7 +315,6 @@ custom processors can declare required options.
 - `density: "72"` → resolution in DPI
 - `extent: "800x600"` → pad/canvas size
 - `flatten: true` → merge layers into one
-- `format: "webp"` → output format, e.g. "webp", "png"
 - `gaussian_blur: "0x3"` → blur effect
 - `gravity: "center"` → anchor point, e.g. "center", "north"
 - `interlace: "Plane"` → progressive rendering
@@ -302,12 +324,83 @@ custom processors can declare required options.
 - `sampling_factor: "4:2:0"` → chroma subsampling
 - `sharpen: "0x1"` → sharpen
 - `strip: true` → remove all metadata and profiles
-- `thumbnail: true` → like resize but strips metadata for smaller files
+- `thumbnail: "200x200"` → like resize but strips profiles for smaller files
 
 </details>
 
 > [!IMPORTANT]
 > Requires ImageMagick to be installed.
+
+### FFmpeg processor
+
+The built-in `Latch::Processor::FFmpeg` module wraps `ffmpeg` for video and
+audio transformations:
+
+```crystal
+struct VideoProcessor
+  include Latch::Processor::FFmpeg
+
+  original video_codec: "libx264", crf: "23", preset: "fast"
+  variant preview, scale: "640:-1", video_codec: "libx264", crf: "28"
+  variant thumb, frames: "1", format: "image2", scale: "320:-1"
+end
+```
+
+<details>
+<summary>**Available options**</summary>
+
+- `audio_bitrate: "128k"` → audio bitrate
+- `audio_codec: "aac"` → audio codec, e.g. "aac", "libopus"
+- `audio_filter: "volume=0.5"` → custom audio filter
+- `crf: "23"` → constant rate factor (quality)
+- `duration: "10"` → max duration in seconds
+- `format: "webm"` → output format, e.g. "mp4", "webm", "image2"
+- `frame_rate: "30"` → output frame rate
+- `frames: "1"` → number of frames to output (for thumbnails)
+- `no_audio: true` → strip audio track
+- `preset: "fast"` → encoding speed/quality, e.g. "fast", "slow"
+- `scale: "1280:720"` → resize, e.g. "1280:720", "-1:480"
+- `start: "00:00:05"` → start time
+- `video_bitrate: "1M"` → video bitrate, e.g. "1M", "500k"
+- `video_codec: "libx264"` → video codec, e.g. "libx264", "libx265"
+- `video_filter: "transpose=1"` → custom video filter
+
+</details>
+
+> [!IMPORTANT]
+> Requires FFmpeg to be installed.
+
+### Vips processor
+
+The built-in `Latch::Processor::Vips` module uses `vipsthumbnail` for resize
+operations and `vips copy` for metadata/format changes:
+
+```crystal
+struct AvatarProcessor
+  include Latch::Processor::Vips
+
+  original resize: "2000x2000>", strip: true
+  variant large, resize: "800x800"
+  variant thumb, resize: "200x200", crop: true, quality: 85
+end
+```
+
+<details>
+<summary>**Available options**</summary>
+
+- `auto_orient: true` → fix orientation from EXIF data
+- `crop: true` → crop to fill instead of shrink-to-fit
+- `format: "webp"` → output format, e.g. "webp", "png"
+- `linear: true` → process in linear color space (higher quality)
+- `quality: 85` → JPEG/WebP compression quality (1-100)
+- `resize: "200x200"` → bounding box, e.g. "200x200", "800x", "2000x2000>"
+- `smartcrop: "attention"` → smart crop mode, e.g. "attention", "entropy"
+- `strip: true` → remove all metadata and profiles
+
+</details>
+
+> [!IMPORTANT]
+> Requires libvips to be installed.
 
 ### Processing the original
 
@@ -506,9 +599,10 @@ Every uploader registers three extractors by default:
 
 Additional extractors can be registered with the `extract` macro:
 
-- **`MimeFromExtension`** (`mime_type`) MIME type from the file extension
-- **`MimeFromFile`** (`mime_type`) Requires `file` CLI tool
-- **`DimensionsFromMagick`** (`width`, `height`) Requires `magick` or `identify` CLI tool
+- **`MimeFromExtension`** (`mime_type`) → MIME type from the file extension
+- **`MimeFromFile`** (`mime_type`) → requires `file` CLI tool
+- **`DimensionsFromMagick`** (`width`, `height`) → requires `magick` or `identify`
+- **`DimensionsFromVips`** (`width`, `height`) → requires `vipsheader`
 
 ```crystal
 struct ImageUploader
