@@ -667,13 +667,13 @@ stored.pages # => 24
 accessing, downloading, and streaming files:
 
 ```crystal
-stored.url                    # storage URL
-stored.exists?                # check existence
-stored.extension              # file extension
-stored.delete                 # remove from storage
+stored.url       # storage URL
+stored.exists?   # check existence
+stored.extension # file extension
+stored.delete    # remove from storage
 
-stored.open { |io| io.gets_to_end }         # read content
-stored.download { |tempfile| use(tempfile) } # download to tempfile
+stored.open { |io| io.gets_to_end }          # read content
+stored.download { |tempfile| tempfile.path } # download to tempfile
 stored.stream(response.output)               # stream to IO
 ```
 
@@ -684,6 +684,7 @@ with custom methods:
 struct ImageUploader
   include Latch::Uploader
 
+  # This extractor extracts `width` and `height` and creates methods for them
   extract dimensions, using: Latch::Extractor::DimensionsFromMagick
 
   class StoredFile
@@ -698,7 +699,8 @@ stored.ratio # => 1.5
 ```
 
 StoredFile serializes to a format compatible with
-[Shrine](https://shrinerb.com):
+[Shrine](https://shrinerb.com). Values from registered extractors are also
+stored in the `metadata` object:
 
 ```json
 {
@@ -707,7 +709,9 @@ StoredFile serializes to a format compatible with
   "metadata": {
     "filename": "photo.jpg",
     "size": 102400,
-    "mime_type": "image/jpeg"
+    "mime_type": "image/jpeg",
+    "width": 2000,
+    "height": 1333
   }
 }
 ```
