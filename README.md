@@ -677,6 +677,26 @@ stored.download { |tempfile| use(tempfile) } # download to tempfile
 stored.stream(response.output)               # stream to IO
 ```
 
+Each uploader generates its own `StoredFile` subclass, which can be extended
+with custom methods:
+
+```crystal
+struct ImageUploader
+  include Latch::Uploader
+
+  extract dimensions, using: Latch::Extractor::DimensionsFromMagick
+
+  class StoredFile
+    def ratio : Float64
+      width.to_f / height
+    end
+  end
+end
+
+stored = ImageUploader.store(uploaded_file)
+stored.ratio # => 1.5
+```
+
 StoredFile serializes to a format compatible with
 [Shrine](https://shrinerb.com):
 
