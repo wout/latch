@@ -15,21 +15,21 @@ require "../run_command"
 # ```
 #
 @[Latch::VariantOptions(
-  audio_bitrate: String?,          # audio bitrate, e.g. "128k"
-  audio_codec: String?,            # audio codec, e.g. "aac", "libopus"
-  audio_filter: String?,           # custom audio filter, e.g. "volume=0.5"
-  crf: Latch::StringOrInt,         # constant rate factor, e.g. 23
-  duration: Latch::StringOrInt,    # max duration, e.g. 10 or "00:01:30"
-  format: String?,                 # output format, e.g. "mp4", "webm", "image2"
-  frame_rate: Latch::StringOrInt,  # output frame rate, e.g. 30
-  frames: Latch::StringOrInt,      # number of frames to output, e.g. 1
-  no_audio: Bool?,                 # strip audio track
-  preset: String?,                 # encoding speed/quality, e.g. "fast", "slow"
-  scale: String?,                  # resize, e.g. "1280:720", "-1:480"
-  start: String?,                  # start time, e.g. "00:00:05"
-  video_bitrate: String?,          # video bitrate, e.g. "1M", "500k"
-  video_codec: String?,            # video codec, e.g. "libx264", "libx265"
-  video_filter: String?,           # custom video filter, e.g. "transpose=1"
+  audio_bitrate: String?,         # audio bitrate, e.g. "128k"
+  audio_codec: String?,           # audio codec, e.g. "aac", "libopus"
+  audio_filter: String?,          # custom audio filter, e.g. "volume=0.5"
+  crf: Latch::StringOrInt,        # constant rate factor, e.g. 23
+  duration: Latch::StringOrInt,   # max duration, e.g. 10 or "00:01:30"
+  format: String?,                # output format, e.g. "mp4", "webm", "image2"
+  frame_rate: Latch::StringOrInt, # output frame rate, e.g. 30
+  frames: Latch::StringOrInt,     # number of frames to output, e.g. 1
+  no_audio: Bool?,                # strip audio track
+  preset: String?,                # encoding speed/quality, e.g. "fast", "slow"
+  scale: String?,                 # resize, e.g. "1280:720", "-1:480"
+  start: String?,                 # start time, e.g. "00:00:05"
+  video_bitrate: String?,         # video bitrate, e.g. "1M", "500k"
+  video_codec: String?,           # video codec, e.g. "libx264", "libx265"
+  video_filter: String?,          # custom video filter, e.g. "transpose=1"
 )]
 module Latch::Processor::FFmpeg
   include Latch::Processor
