@@ -30,6 +30,12 @@ module Latch::Uploader
       def process(**options) : self
         {{ @type }}.process(self, **options)
       end
+
+      # Base delete for the chain; processor macros prepend variant
+      # cleanup via previous_def.
+      def delete : Nil
+        super
+      end
     end
 
     # Defines the path prefix for uploads in the storage. Overwrite this method
@@ -214,6 +220,13 @@ module Latch::Uploader
           )
         end
       {% end %}
+
+      def delete : Nil
+        {% for variant_name in variant_names %}
+          storage.delete(variant_location("{{ name }}_{{ variant_name.id }}"))
+        {% end %}
+        previous_def
+      end
     end
   end
 

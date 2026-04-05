@@ -128,6 +128,22 @@ describe Latch::Processor::Magick do
       stored.sizes_small.exists?.should be_true
     end
 
+    it "deletes variants when the stored file is deleted" do
+      stored = ProcessorUploader.store(build_uploaded_file(
+        path: "spec/fixtures/lucky_logo_tiny.png",
+        filename: "logo.png",
+      ))
+
+      ProcessorUploader.process(stored)
+      stored.sizes_large.exists?.should be_true
+
+      stored.delete
+
+      stored.exists?.should be_false
+      stored.sizes_large.exists?.should be_false
+      stored.sizes_small.exists?.should be_false
+    end
+
     it "returns a variant that does not exist before processing" do
       stored = ProcessorUploader.store(build_uploaded_file(
         path: "spec/fixtures/lucky_logo_tiny.png",
