@@ -414,7 +414,7 @@ end
 - `crop: true` (`Bool`) → crop to fill instead of shrink-to-fit
 - `format: "webp"` (`String`) → output format, e.g. "webp", "png"
 - `linear: true` (`Bool`) → process in linear color space (higher quality)
-- `quality: 85` (`Int32`) → JPEG/WebP compression quality (1-100)
+- `quality: 85` (`Int32 | String`) → JPEG/WebP compression quality (1-100)
 - `resize: "200x200"` (`String`) → bounding box, e.g. "200x200", "800x", "2000x2000>"
 - `smartcrop: "attention"` (`String`) → smart crop mode, e.g. "attention", "entropy"
 - `strip: true` (`Bool`) → remove all metadata and profiles
