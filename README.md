@@ -306,7 +306,7 @@ Typos are caught at compile time. All built-in options are optional, but
 custom processors can declare required options.
 
 <details>
-<summary>**Available options**</summary>
+<summary><strong>Available options</strong></summary>
 
 - `auto_orient: true` → fix orientation from EXIF data
 - `background: "white"` → background color, e.g. "white", "transparent"
@@ -347,7 +347,7 @@ end
 ```
 
 <details>
-<summary>**Available options**</summary>
+<summary><strong>Available options</strong></summary>
 
 - `audio_bitrate: "128k"` → audio bitrate
 - `audio_codec: "aac"` → audio codec, e.g. "aac", "libopus"
@@ -386,7 +386,7 @@ end
 ```
 
 <details>
-<summary>**Available options**</summary>
+<summary><strong>Available options</strong></summary>
 
 - `auto_orient: true` → fix orientation from EXIF data
 - `crop: true` → crop to fill instead of shrink-to-fit
