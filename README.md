@@ -593,9 +593,9 @@ end
 
 Every uploader registers three extractors by default:
 
-- **`FilenameFromIO`** (`filename`) Original filename from the upload
-- **`MimeFromIO`** (`mime_type`) MIME type from the Content-Type header
-- **`SizeFromIO`** (`size`) File size in bytes
+- **`FilenameFromIO`** (`filename`) → Original filename from the upload
+- **`MimeFromIO`** (`mime_type`) → MIME type from the Content-Type header
+- **`SizeFromIO`** (`size`) → File size in bytes
 
 Additional extractors can be registered with the `extract` macro:
 
