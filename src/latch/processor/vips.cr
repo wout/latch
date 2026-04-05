@@ -15,14 +15,14 @@ require "../run_command"
 # ```
 #
 @[Latch::VariantOptions(
-  auto_orient: Bool?, # fix orientation from EXIF data
-  crop: Bool?,        # crop to fill instead of shrink-to-fit
-  format: String?,    # output format via extension, e.g. "webp", "png"
-  linear: Bool?,      # process in linear color space (higher quality)
-  quality: Int32?,    # JPEG/WebP compression quality (1-100)
-  resize: String?,    # bounding box, e.g. "200x200", "800x", "2000x2000>"
-  smartcrop: String?, # smart crop mode, e.g. "attention", "entropy"
-  strip: Bool?,       # remove all metadata and profiles
+  auto_orient: Bool?,          # fix orientation from EXIF data
+  crop: Bool?,                 # crop to fill instead of shrink-to-fit
+  format: String?,             # output format via extension, e.g. "webp", "png"
+  linear: Bool?,               # process in linear color space (higher quality)
+  quality: Latch::StringOrInt, # JPEG/WebP compression quality (1-100)
+  resize: String?,             # bounding box, e.g. "200x200", "800x", "2000x2000>"
+  smartcrop: String?,          # smart crop mode, e.g. "attention", "entropy"
+  strip: Bool?,                # remove all metadata and profiles
 )]
 module Latch::Processor::Vips
   include Latch::Processor
