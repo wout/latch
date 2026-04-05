@@ -279,9 +279,32 @@ struct AvatarProcessor
 end
 ```
 
-Available options: `resize`, `gravity`, `extent`, `crop`, `quality` (all
-optional strings). Typos and missing required options are caught at compile
-time.
+Typos are caught at compile time. All built-in options are optional, but
+custom processors can declare required options.
+
+<details>
+<summary>Available options</summary>
+
+- `auto_orient: true` → fix orientation from EXIF data
+- `background: "white"` → background color, e.g. "white", "transparent"
+- `colorspace: "sRGB"` → convert color model, e.g. "sRGB", "Gray"
+- `crop: "200x200+10+10"` → cut a region
+- `density: "72"` → resolution in DPI
+- `extent: "800x600"` → pad/canvas size
+- `flatten: true` → merge layers into one
+- `format: "webp"` → output format, e.g. "webp", "png"
+- `gaussian_blur: "0x3"` → blur effect
+- `gravity: "center"` → anchor point, e.g. "center", "north"
+- `interlace: "Plane"` → progressive rendering
+- `quality: "85"` → compression quality
+- `resize: "800x600"` → scale to fit, e.g. "800x600", "200x200>"
+- `rotate: "90"` → rotate by degrees
+- `sampling_factor: "4:2:0"` → chroma subsampling
+- `sharpen: "0x1"` → sharpen
+- `strip: true` → remove all metadata and profiles
+- `thumbnail: true` → like resize but strips metadata for smaller files
+
+</details>
 
 > [!IMPORTANT]
 > Requires ImageMagick to be installed.

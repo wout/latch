@@ -14,11 +14,24 @@ require "../run_command"
 # ```
 #
 @[Latch::VariantOptions(
-  resize: String?,
-  gravity: String?,
-  extent: String?,
-  crop: String?,
-  quality: String?,
+  auto_orient: Bool?,       # fix orientation from EXIF data
+  background: String?,      # background color, e.g. "white", "transparent"
+  colorspace: String?,      # convert color model, e.g. "sRGB", "Gray"
+  crop: String?,            # cut a region, e.g. "200x200+10+10"
+  density: String?,         # resolution in DPI, e.g. "72"
+  extent: String?,          # pad/canvas size, e.g. "800x600"
+  flatten: Bool?,           # merge layers into one
+  format: String?,          # output format, e.g. "webp", "png"
+  gaussian_blur: String?,   # blur effect, e.g. "0x3"
+  gravity: String?,         # anchor point, e.g. "center", "north"
+  interlace: String?,       # progressive rendering, e.g. "Plane"
+  quality: String?,         # compression quality, e.g. "85"
+  resize: String?,          # scale to fit, e.g. "800x600", "200x200>"
+  rotate: String?,          # rotate by degrees, e.g. "90"
+  sampling_factor: String?, # chroma subsampling, e.g. "4:2:0"
+  sharpen: String?,         # sharpen, e.g. "0x1"
+  strip: Bool?,             # remove all metadata and profiles
+  thumbnail: Bool?,         # like resize but strips metadata for smaller files
 )]
 module Latch::Processor::Magick
   include Latch::Processor
@@ -46,11 +59,17 @@ module Latch::Processor::Magick
       run_command("convert", [input] + args + [output])
     end
 
-    # Builds an array of CLI flag/value pairs from a variant's options.
+    # Builds an array of CLI flags from a variant's options. Boolean options
+    # become standalone flags (e.g. `-strip`), string options become flag/value
+    # pairs (e.g. `-resize 800x600`).
     private def self.process_build_args(variant) : Array(String)
       Array(String).new.tap do |args|
-        {% for key in anno.named_args.keys %}
-          args << "-{{ key }}" << variant[:{{ key }}].to_s if variant[:{{ key }}]
+        {% for key, type in anno.named_args %}
+          {% if type.stringify.includes?("Bool") %}
+            args << "-{{ key }}" if variant[:{{ key }}]
+          {% else %}
+            args << "-{{ key }}" << variant[:{{ key }}].to_s if variant[:{{ key }}]
+          {% end %}
         {% end %}
       end
     end
