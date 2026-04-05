@@ -283,7 +283,7 @@ Typos are caught at compile time. All built-in options are optional, but
 custom processors can declare required options.
 
 <details>
-<summary>Available options</summary>
+<summary>**Available options**</summary>
 
 - `auto_orient: true` → fix orientation from EXIF data
 - `background: "white"` → background color, e.g. "white", "transparent"
