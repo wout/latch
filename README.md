@@ -244,11 +244,35 @@ To run processors after promotion, pass `process: true`:
 attach avatar, process: true
 ```
 
-For background processing, pass a block instead:
+For background processing, pass a block instead. For example, using
+[Mel](https://github.com/GrottoPress/mel):
 
 ```crystal
 attach avatar do |record|
-  ProcessAvatarJob.perform_async(record.id)
+  AvatarProcessingJob.run(record_id: record.id)
+end
+```
+
+The background job:
+
+```crystal
+struct AvatarProcessingJob
+  include Mel::Job::Now
+
+  def initialize(@record_id : Int64)
+  end
+
+  def run
+    # If the avatar is nilable
+    user.avatar.try(&.process)
+
+    # or if it is not nilable:
+    user.avatar.process
+  end
+
+  private def user
+    user = UserQuery.find(record_id)
+  end
 end
 ```
 
