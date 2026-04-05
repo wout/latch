@@ -144,6 +144,26 @@ describe Latch::Processor::Magick do
       stored.sizes_small.exists?.should be_false
     end
 
+    it "returns nil for a nilable variant accessor before processing" do
+      stored = ProcessorUploader.store(build_uploaded_file(
+        path: "spec/fixtures/lucky_logo_tiny.png",
+        filename: "logo.png",
+      ))
+
+      stored.sizes_large?.should be_nil
+    end
+
+    it "returns the variant for a nilable variant accessor after processing" do
+      stored = ProcessorUploader.store(build_uploaded_file(
+        path: "spec/fixtures/lucky_logo_tiny.png",
+        filename: "logo.png",
+      ))
+
+      ProcessorUploader.process(stored)
+
+      stored.sizes_large?.should be_a(ProcessorUploader::StoredFile)
+    end
+
     it "returns a variant that does not exist before processing" do
       stored = ProcessorUploader.store(build_uploaded_file(
         path: "spec/fixtures/lucky_logo_tiny.png",

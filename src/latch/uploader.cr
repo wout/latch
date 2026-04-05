@@ -219,6 +219,11 @@ module Latch::Uploader
             metadata: Latch::MetadataHash.new,
           )
         end
+
+        def {{ name }}_{{ variant_name.id }}? : {{ @type }}::StoredFile?
+          variant = {{ name }}_{{ variant_name.id }}
+          variant if variant.exists?
+        end
       {% end %}
 
       def delete : Nil
