@@ -21,7 +21,6 @@ require "../run_command"
   density: String?,         # resolution in DPI, e.g. "72"
   extent: String?,          # pad/canvas size, e.g. "800x600"
   flatten: Bool?,           # merge layers into one
-  format: String?,          # output format, e.g. "webp", "png"
   gaussian_blur: String?,   # blur effect, e.g. "0x3"
   gravity: String?,         # anchor point, e.g. "center", "north"
   interlace: String?,       # progressive rendering, e.g. "Plane"
@@ -31,7 +30,7 @@ require "../run_command"
   sampling_factor: String?, # chroma subsampling, e.g. "4:2:0"
   sharpen: String?,         # sharpen, e.g. "0x1"
   strip: Bool?,             # remove all metadata and profiles
-  thumbnail: Bool?,         # like resize but strips metadata for smaller files
+  thumbnail: String?,       # like resize but strips profiles, e.g. "200x200"
 )]
 module Latch::Processor::Magick
   include Latch::Processor
@@ -59,16 +58,18 @@ module Latch::Processor::Magick
       run_command("convert", [input] + args + [output])
     end
 
-    # Builds an array of CLI flags from a variant's options. Boolean options
-    # become standalone flags (e.g. `-strip`), string options become flag/value
-    # pairs (e.g. `-resize 800x600`).
+    # Builds an array of CLI flags from a variant's options. Underscores in
+    # option names are converted to hyphens (e.g. `auto_orient` → `-auto-orient`).
+    # Boolean options become standalone flags, string options become flag/value
+    # pairs.
     private def self.process_build_args(variant) : Array(String)
       Array(String).new.tap do |args|
         {% for key, type in anno.named_args %}
+          {% flag = key.stringify.gsub(/_/, "-") %}
           {% if type.stringify.includes?("Bool") %}
-            args << "-{{ key }}" if variant[:{{ key }}]
+            args << "-{{ flag.id }}" if variant[:{{ key }}]
           {% else %}
-            args << "-{{ key }}" << variant[:{{ key }}].to_s if variant[:{{ key }}]
+            args << "-{{ flag.id }}" << variant[:{{ key }}].to_s if variant[:{{ key }}]
           {% end %}
         {% end %}
       end
