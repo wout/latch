@@ -2,12 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.3.1] - 2026-04-06
+## [0.3.2] - 2026-04-06
 
 ### Added
 
 - **`Latch::ProcessingError`** wraps variant and original processing failures
   with the variant name, processor name, and original exception as `cause`.
+
+## [0.3.1] - 2026-04-06
+
+### Added
+
+- **Nilable variant accessors** (e.g. `stored.versions_thumb?`) return `nil`
+  if the variant hasn't been processed yet, useful for safe template rendering.
 
 ## [0.3.0] - 2026-04-05
 
