@@ -116,6 +116,27 @@ describe Latch::Processor::Magick do
       stored.sizes_large.storage_key.should eq("store")
     end
 
+    it "returns a variant with the nilable accessor after processing" do
+      stored = ProcessorUploader.store(build_uploaded_file(
+        path: "spec/fixtures/lucky_logo_tiny.png",
+        filename: "logo.png",
+      ))
+
+      ProcessorUploader.process(stored)
+
+      stored.sizes_large?.should be_a(ProcessorUploader::StoredFile)
+      stored.sizes_small?.should be_a(ProcessorUploader::StoredFile)
+    end
+
+    it "returns nil with the nilable accessor before processing" do
+      stored = ProcessorUploader.store(build_uploaded_file(
+        path: "spec/fixtures/lucky_logo_tiny.png",
+        filename: "logo.png",
+      ))
+
+      stored.sizes_large?.should be_nil
+    end
+
     it "returns a variant that exists after processing" do
       stored = ProcessorUploader.store(build_uploaded_file(
         path: "spec/fixtures/lucky_logo_tiny.png",
@@ -144,24 +165,24 @@ describe Latch::Processor::Magick do
       stored.sizes_small.exists?.should be_false
     end
 
-    it "returns nil for a nilable variant accessor before processing" do
+    it "wraps variant errors in Latch::ProcessingError" do
       stored = ProcessorUploader.store(build_uploaded_file(
         path: "spec/fixtures/lucky_logo_tiny.png",
         filename: "logo.png",
       ))
 
-      stored.sizes_large?.should be_nil
-    end
+      original_path = ENV["PATH"]
+      ENV["PATH"] = ""
 
-    it "returns the variant for a nilable variant accessor after processing" do
-      stored = ProcessorUploader.store(build_uploaded_file(
-        path: "spec/fixtures/lucky_logo_tiny.png",
-        filename: "logo.png",
-      ))
-
-      ProcessorUploader.process(stored)
-
-      stored.sizes_large?.should be_a(ProcessorUploader::StoredFile)
+      begin
+        ex = expect_raises(Latch::ProcessingError) do
+          ProcessorUploader.process(stored)
+        end
+        ex.message.as(String).should contain("processor 'sizes'")
+        ex.cause.should be_a(Latch::CliToolNotFound)
+      ensure
+        ENV["PATH"] = original_path
+      end
     end
 
     it "returns a variant that does not exist before processing" do

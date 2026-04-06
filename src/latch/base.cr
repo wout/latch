@@ -21,4 +21,6 @@ module Latch
   class InvalidFile < Error; end
 
   class CliToolNotFound < Error; end
+
+  class ProcessingError < Error; end
 end

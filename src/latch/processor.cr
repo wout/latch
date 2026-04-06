@@ -55,7 +55,10 @@ module Latch::Processor
               storage.upload(io, location)
               channel.send(nil)
             rescue ex
-              channel.send(ex)
+              channel.send(Latch::ProcessingError.new(
+                "Failed to process variant '#{variant_name}' for processor '#{name}'",
+                cause: ex
+              ))
             end
           end
 
@@ -66,12 +69,19 @@ module Latch::Processor
           end
 
           if (original = ORIGINAL_OPTIONS.first?)
-            variant_name = "original"
-            variant_options = original
-            io = begin
-              {{ block.body }}
+            begin
+              variant_name = "original"
+              variant_options = original
+              io = begin
+                {{ block.body }}
+              end
+              storage.upload(io, stored_file.id)
+            rescue ex
+              raise Latch::ProcessingError.new(
+                "Failed to process original for processor '#{name}'",
+                cause: ex
+              )
             end
-            storage.upload(io, stored_file.id)
           end
         end
       end
