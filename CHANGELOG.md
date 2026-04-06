@@ -2,12 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.3.1] - 2026-04-05
+## [0.3.1] - 2026-04-06
 
 ### Added
 
-- **Nilable variant accessors** (e.g. `stored.sizes_thumb?`) that return `nil`
-  if the variant hasn't been processed yet, making template rendering safer.
+- **`Latch::ProcessingError`** wraps variant and original processing failures
+  with the variant name, processor name, and original exception as `cause`.
 
 ## [0.3.0] - 2026-04-05
 

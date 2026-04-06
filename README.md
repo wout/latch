@@ -486,6 +486,20 @@ end
 user.avatar.versions_thumb.url
 ```
 
+### Error handling
+
+Processing errors are wrapped in `Latch::ProcessingError` with the variant
+and processor name. The original exception is available via `cause`:
+
+```crystal
+begin
+  stored.process
+rescue ex : Latch::ProcessingError
+  ex.message # => "Failed to process variant 'thumb' for processor 'versions'"
+  ex.cause   # => the underlying Latch::CliToolNotFound, IO::Error, etc.
+end
+```
+
 ### Custom processors
 
 Create a module with `@[Latch::VariantOptions(...)]` and use the `process`
