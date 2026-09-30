@@ -75,10 +75,14 @@ abstract class Latch::StoredFile
   # # => "uploads/abc123/sizes_large.jpg"
   # ```
   #
-  def variant_location(variant : String) : String
+  def variant_location(variant : String, nested : Bool = true) : String
     if ext = extension?
-      base = id.rchop(".#{ext}")
-      "#{base}/#{variant}.#{ext}"
+      if nested
+        base = id.rchop(".#{ext}")
+        "#{base}/#{variant}.#{ext}"
+      else
+        "#{File.dirname(id)}/#{variant}.#{ext}"
+      end
     else
       "#{id}/#{variant}"
     end

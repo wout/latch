@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.3] - 2026-09-29
+
+### Added
+
+- Allow passing custom options to generate_location overrides.
+
 ## [0.3.2] - 2026-04-06
 
 ### Added

@@ -98,7 +98,7 @@ module Latch::Avram::SaveOperation
   # committing to the database the attachment will be moved to the permanent
   # storage.
   #
-  macro attach(name, field_name = nil, process = false, &block)
+  macro attach(name, field_name = nil, process = false, **options, &block)
     {%
       field_name = "#{name}_file".id if field_name.nil?
 
@@ -135,6 +135,7 @@ module Latch::Avram::SaveOperation
       {{ name }}.value = T::ATTACHMENT_UPLOADER_{{ name.stringify.upcase.id }}.cache(
         upload.as(Latch::UploadedFile),
         path_prefix: prefix,
+        {{ options.double_splat }}
       )
     end
 
@@ -153,10 +154,9 @@ module Latch::Avram::SaveOperation
       end
 
       record_id = record.{{ T.constant(:PRIMARY_KEY_NAME).id }}.to_s
-      prefix = T::ATTACHMENT_PREFIX_{{ name.stringify.upcase.id }}.gsub(/:id/, record_id)
       stored = T::ATTACHMENT_UPLOADER_{{ name.stringify.upcase.id }}.promote(
         cached,
-        location: File.join(prefix, File.basename(cached.id))
+        location: cached.id
       )
       T::SaveOperation.update!(record, {{ name }}: stored)
 

@@ -85,7 +85,7 @@ module Latch::Uploader
       metadata : MetadataHash? = nil,
       **options
     ) : {{ stored_file }}
-      data = extract_metadata(uploaded_file, metadata, **options)
+    data = extract_metadata(uploaded_file, metadata, **options)
       data = data.merge(metadata) if metadata
       location = options[:location]? || generate_location(uploaded_file, data, **options)
 
@@ -196,6 +196,8 @@ module Latch::Uploader
       variant_names = using.resolve.constants
         .select(&.starts_with?("VARIANT_"))
         .map { |const| using.resolve.constant(const) }
+
+      nested_variants = using.resolve.constant(:NESTED_VARIANTS)
     %}
 
     {% unless @type.has_constant?(:HAS_PROCESSORS) %}
@@ -214,7 +216,7 @@ module Latch::Uploader
       {% for variant_name in variant_names %}
         def {{ name }}_{{ variant_name.id }} : {{ @type }}::StoredFile
           {{ @type }}::StoredFile.new(
-            id: variant_location("{{ name }}_{{ variant_name.id }}"),
+            id: variant_location("{{ name }}_{{ variant_name.id }}", {{ nested_variants }}),
             storage_key: storage_key,
             metadata: Latch::MetadataHash.new,
           )
@@ -228,7 +230,7 @@ module Latch::Uploader
 
       def delete : Nil
         {% for variant_name in variant_names %}
-          storage.delete(variant_location("{{ name }}_{{ variant_name.id }}"))
+          storage.delete(variant_location("{{ name }}_{{ variant_name.id }}", {{ nested_variants }}))
         {% end %}
         previous_def
       end
@@ -339,6 +341,23 @@ module Latch::Uploader
     basename = generate_uid(uploaded_file, metadata, **options)
     filename = extension ? "#{basename}.#{extension}" : basename
     File.join([options[:path_prefix]?, filename].compact)
+  end
+
+  macro verify_custom_options_required_many(options, **required, &block)
+  {% for key, type in required %}
+    {{key.id}} =
+      verify_custom_options_required(
+        :{{key}},
+        {{type}},
+        **{{options}}
+      )
+  {% end %}
+  {{block.body}}
+  end
+
+  def verify_custom_options_required(key, type : T.class, **options) : T forall T
+    options[key]?.try(&.as(T)) ||
+      raise ArgumentError.new("missing required option: #{key}")
   end
 
   # Generates a unique identifier for file locations. Override this in

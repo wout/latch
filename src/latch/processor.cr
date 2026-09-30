@@ -48,7 +48,10 @@ module Latch::Processor
 
           VARIANTS.each do |variant_name, variant_options|
             spawn do
-              location = stored_file.variant_location("#{name}_#{variant_name}")
+              location = stored_file.variant_location(
+                "#{name}_#{variant_name}", 
+                nested: NESTED_VARIANTS
+              )
               io = begin
                 {{ block.body }}
               end

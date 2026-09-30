@@ -176,6 +176,51 @@ struct ImageUploader
 end
 ```
 
+### Pass custom options to generate_location override
+# src/operations/save_marketplace_listing_image.cr
+```crystal
+class SaveMarketplaceListingImage < MarketplaceListingImage::SaveOperation
+  permit_columns marketplace_listing_id, position
+  attach image, process: true, listing_id: marketplace_listing_id.value.to_s, position: position.value.to_s
+
+  before_save :run_validations
+
+  private def run_validations
+    validate_required marketplace_listing_id, position
+
+    validate_file_size_of image, max: 5_000_000
+    validate_file_mime_type_of image,
+      in: %w[image/png image/jpeg image/webp]
+  end
+end
+```
+
+# src/uploader/marketplace_listing_image_uploader.cr
+```crystal
+struct MarketplaceListingImageUploader
+  include Latch::Uploader
+  process image, using: MarketplaceListingImageProcessor
+
+  def generate_location(
+    uploaded_file,
+    metadata,
+    **options,
+  ) : String
+    verify_custom_options_required_many(
+      options,
+      path_prefix: String,
+      listing_id: String,
+      position: String
+    ) do
+      extension = file_extension(uploaded_file, metadata)
+      filename = "image.#{extension}"
+      path = File.join([path_prefix, listing_id, position, filename].compact)
+      path
+    end
+  end
+end
+```
+
 ### Custom storage keys
 
 By default, uploaders use `"cache"` and `"store"`. Override with the
@@ -551,6 +596,45 @@ module MyQualityProcessor
     end
   end
 end
+```
+
+## Change variant image location (nested or not or not)
+```crystal
+struct MarketplaceListingImageProcessor
+  include Latch::Processor::Magick
+
+  NESTED_VARIANTS = false
+
+  original resize: "2000x2000>", strip: true, quality: 85
+  variant thumb,
+    resize: "500x500^",
+    gravity: "center",
+    quality: 80
+end
+```
+
+Use the `Bool` constant `NESTED_VARIANTS` in your processors to determine whether or not to dump the output all in one folder.
+
+
+**Example false**:
+```
+└> tree
+.
+├── cache
+└── marketplace_listing_image
+    ├── 10c6289c-2aea-421b-ae8c-cb81b2bcd1e2
+    │   ├── 1
+    │   │   ├── image.jpg
+    │   │   └── image_thumb.jpg
+    │   ├── 2
+    │   │   ├── image.jpg
+    │   │   └── image_thumb.jpg
+    │   ├── 3
+    │   │   ├── image.jpg
+    │   │   └── image_thumb.jpg
+    │   └── 4
+    │       ├── image.jpg
+    │       └── image_thumb.jpg
 ```
 
 ## Storage backends
